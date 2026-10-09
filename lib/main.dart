@@ -31,9 +31,17 @@ import 'package:grahmitracus/core/services/firebase_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initialization warning: $e');
+  }
   await EnvConfig.init();
-  await FirebaseNotificationService.initialize();
+  try {
+    await FirebaseNotificationService.initialize();
+  } catch (e) {
+    debugPrint('FirebaseNotificationService initialization warning: $e');
+  }
 
   // Initialize stored access token if available
   final token = await AuthStorageService.getAccessToken();
