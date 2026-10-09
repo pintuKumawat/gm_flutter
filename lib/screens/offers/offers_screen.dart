@@ -56,84 +56,6 @@ class OffersScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Hero Offer Banner
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(18.r),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      AppColors.promoGradientStart,
-                      AppColors.promoGradientMiddle,
-                      AppColors.promoGradientEnd,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.brandPurple.withValues(alpha: 0.25),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20.r),
-                      ),
-                      child: Text(
-                        '🔥 TODAY\'S MEGA DEAL',
-                        style: AppTextStyles.plusJakartaSans(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ),
-                    12.height,
-                    Text(
-                      'Get Up To 40% OFF\non Household Essentials',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                    6.height,
-                    Text(
-                      'Use code MEGA40 at checkout',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              24.height,
-              Text(
-                'Available Coupons',
-                style: AppTextStyles.plusJakartaSans(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              12.height,
-
               // Coupon Cards List
               ListView.separated(
                 shrinkWrap: true,
@@ -142,116 +64,198 @@ class OffersScreen extends StatelessWidget {
                 separatorBuilder: (_, _) => 12.height,
                 itemBuilder: (context, index) {
                   final coupon = _coupons[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.subtleBackground,
-                      borderRadius: BorderRadius.circular(14.r),
-                      border: Border.all(color: AppColors.borderSubtle),
-                    ),
-                    padding: EdgeInsets.all(14.r),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 5.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.brandPurple.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6.r),
-                                border: Border.all(
-                                  color: AppColors.brandPurple.withValues(alpha: 0.3),
-                                  style: BorderStyle.solid,
+                  
+                  // Define distinct vibrant themes for each coupon
+                  final List<Map<String, Color>> ticketThemes = [
+                    {
+                      'primary': const Color(0xFF19408C), // Blue
+                      'highlight': const Color(0xFF4A80F5),
+                      'dot': const Color(0xFFD6EEFB),
+                    },
+                    {
+                      'primary': const Color(0xFF4C1D95), // Purple
+                      'highlight': const Color(0xFF8B5CF6),
+                      'dot': const Color(0xFFE9D5FF),
+                    },
+                    {
+                      'primary': const Color(0xFF9A3412), // Orange
+                      'highlight': const Color(0xFFF97316),
+                      'dot': const Color(0xFFFFEDD5),
+                    },
+                    {
+                      'primary': const Color(0xFF064E3B), // Green
+                      'highlight': const Color(0xFF10B981),
+                      'dot': const Color(0xFFD1FAE5),
+                    },
+                  ];
+                  
+                  final theme = ticketThemes[index % ticketThemes.length];
+                  final Color primaryColor = theme['primary']!;
+                  final Color highlightColor = theme['highlight']!;
+                  final Color dotColor = theme['dot']!;
+                  final Color textColor = theme['primary']!;
+                  
+                  return ClipPath(
+                    clipper: TicketClipper(),
+                    child: Container(
+                      height: 125.h,
+                      color: Colors.white,
+                      child: Row(
+                        children: [
+                          // Left Section
+                          Container(
+                            width: 85.w,
+                            color: primaryColor,
+                            child: Padding(
+                              padding: EdgeInsets.all(8.w),
+                              child: CustomPaint(
+                                painter: DashedRectPainter(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  strokeWidth: 1.5,
+                                  dashWidth: 6.0,
+                                  dashSpace: 4.0,
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.confirmation_number_outlined,
-                                    size: 14.sp,
-                                    color: AppColors.brandPurple,
-                                  ),
-                                  6.width,
-                                  Text(
-                                    coupon['code']!,
-                                    style: AppTextStyles.plusJakartaSans(
-                                      fontSize: 12.5.sp,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.brandPurple,
-                                      letterSpacing: 0.5,
+                                child: Center(
+                                  child: RotatedBox(
+                                    quarterTurns: 3,
+                                    child: Text(
+                                      'DISCOUNT\nCOUPON',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.plusJakartaSans(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: 1.2,
+                                        height: 1.1,
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Coupon ${coupon['code']} copied!'),
-                                    duration: const Duration(milliseconds: 1000),
-                                    backgroundColor: AppColors.brandPurple,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 4.h,
-                                ),
-                                child: Text(
-                                  'COPY CODE',
-                                  style: AppTextStyles.plusJakartaSans(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.brandOrange,
-                                  ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        10.height,
-                        Text(
-                          coupon['title']!,
-                          style: AppTextStyles.cardTitle,
-                        ),
-                        4.height,
-                        Text(
-                          coupon['desc']!,
-                          style: AppTextStyles.plusJakartaSans(
-                            fontSize: 12.sp,
-                            color: AppColors.textSecondary,
                           ),
-                        ),
-                        8.height,
-                        const Divider(color: AppColors.borderSubtle, height: 1),
-                        8.height,
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 13.sp,
-                              color: AppColors.iconSubtle,
-                            ),
-                            4.width,
-                            Text(
-                              coupon['expiry']!,
-                              style: AppTextStyles.plusJakartaSans(
-                                fontSize: 11.sp,
-                                color: AppColors.textHint,
-                                fontWeight: FontWeight.w500,
+                          // Right Section
+                          Expanded(
+                            child: CustomPaint(
+                              painter: DottedBackgroundPainter(
+                                color: dotColor,
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'VOUCHER SHOPPING',
+                                      style: AppTextStyles.plusJakartaSans(
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w900,
+                                        color: textColor,
+                                        letterSpacing: 0.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    4.height,
+                                    Text(
+                                      coupon['discount']!,
+                                      style: AppTextStyles.plusJakartaSans(
+                                        fontSize: 26.sp,
+                                        fontWeight: FontWeight.w900,
+                                        color: highlightColor,
+                                        height: 1.0,
+                                      ),
+                                      maxLines: 1,
+                                    ),
+                                    6.height,
+                                    InkWell(
+                                      onTap: () {
+                                        Clipboard.setData(ClipboardData(text: coupon['code']!));
+                                        HapticFeedback.selectionClick();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Coupon code ${coupon['code']} copied!'),
+                                            duration: const Duration(milliseconds: 1500),
+                                            backgroundColor: primaryColor,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8.r),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(4.r),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                        decoration: BoxDecoration(
+                                          color: primaryColor.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4.r),
+                                          border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              coupon['code']!,
+                                              style: AppTextStyles.plusJakartaSans(
+                                                fontSize: 10.sp,
+                                                fontWeight: FontWeight.w800,
+                                                color: primaryColor,
+                                              ),
+                                            ),
+                                            6.width,
+                                            Icon(
+                                              Icons.copy_rounded,
+                                              size: 11.sp,
+                                              color: primaryColor,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    6.height,
+                                    CustomPaint(
+                                      painter: DashedRectPainter(
+                                        color: primaryColor,
+                                        strokeWidth: 1.0,
+                                        dashWidth: 4.0,
+                                        dashSpace: 3.0,
+                                      ),
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              'VALID UNTIL: ${coupon['expiry']!.replaceAll('Valid ', '').toUpperCase()}',
+                                              style: AppTextStyles.plusJakartaSans(
+                                                fontSize: 7.sp,
+                                                fontWeight: FontWeight.w800,
+                                                color: primaryColor,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                            ),
+                                            2.height,
+                                            Text(
+                                              'WWW.GRAHMITRA.IN',
+                                              style: AppTextStyles.plusJakartaSans(
+                                                fontSize: 6.sp,
+                                                fontWeight: FontWeight.w700,
+                                                color: primaryColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -263,4 +267,126 @@ class OffersScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class TicketClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    
+    // Top edge scalloped
+    int scallops = 15;
+    double scallopWidth = size.width / scallops;
+    path.lineTo(0, 0);
+    for (int i = 0; i < scallops; i++) {
+      path.arcToPoint(
+        Offset(scallopWidth * (i + 1), 0),
+        radius: Radius.circular(scallopWidth / 2),
+        clockwise: true,
+      );
+    }
+    
+    // Right edge with center cutout
+    path.lineTo(size.width, size.height / 2 - 15);
+    path.arcToPoint(
+      Offset(size.width, size.height / 2 + 15),
+      radius: const Radius.circular(15),
+      clockwise: true,
+    );
+    path.lineTo(size.width, size.height);
+    
+    // Bottom edge scalloped
+    for (int i = scallops; i > 0; i--) {
+      path.arcToPoint(
+        Offset(scallopWidth * (i - 1), size.height),
+        radius: Radius.circular(scallopWidth / 2),
+        clockwise: true,
+      );
+    }
+    
+    // Left edge with center cutout
+    path.lineTo(0, size.height / 2 + 15);
+    path.arcToPoint(
+      Offset(0, size.height / 2 - 15),
+      radius: const Radius.circular(15),
+      clockwise: true,
+    );
+    path.lineTo(0, 0);
+    
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class DashedRectPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+
+  DashedRectPainter({
+    this.color = Colors.white,
+    this.strokeWidth = 2.0,
+    this.dashWidth = 6.0,
+    this.dashSpace = 4.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    // Draw dashed rectangle
+    _drawDashedLine(canvas, paint, const Offset(0, 0), Offset(size.width, 0)); // Top
+    _drawDashedLine(canvas, paint, Offset(size.width, 0), Offset(size.width, size.height)); // Right
+    _drawDashedLine(canvas, paint, Offset(size.width, size.height), Offset(0, size.height)); // Bottom
+    _drawDashedLine(canvas, paint, Offset(0, size.height), const Offset(0, 0)); // Left
+  }
+
+  void _drawDashedLine(Canvas canvas, Paint paint, Offset start, Offset end) {
+    var length = (end - start).distance;
+    var direction = (end - start) / length;
+    var currentPoint = start;
+
+    while (length > 0) {
+      var drawLength = dashWidth < length ? dashWidth : length;
+      canvas.drawLine(currentPoint, currentPoint + direction * drawLength, paint);
+      length -= (dashWidth + dashSpace);
+      currentPoint += direction * (dashWidth + dashSpace);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class DottedBackgroundPainter extends CustomPainter {
+  final Color color;
+
+  DottedBackgroundPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    double spacing = 16.0;
+    double rowSpacing = spacing * 0.866; // Perfect hexagonal staggered grid
+    double radius = 2.5;
+
+    // Draw slightly past the edges to ensure complete coverage
+    for (double y = 0; y <= size.height + rowSpacing; y += rowSpacing) {
+      for (double x = 0; x <= size.width + spacing; x += spacing) {
+        // Offset alternate rows for a staggered dot pattern
+        double offsetX = (y / rowSpacing).round() % 2 == 0 ? 0 : spacing / 2;
+        canvas.drawCircle(Offset(x + offsetX, y), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

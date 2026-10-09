@@ -654,15 +654,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // 4. API Connected Category Groups Bar
               _buildTopCategoryTabs(),
-              12.height,
+              4.height,
 
               // 5. Seamless Infinite Auto-Scroll Promo Offers Carousel
               _buildPromoBannerCarousel(),
-              14.height,
+              6.height,
 
               // 6. Dynamic Subcategories Grid
               _buildGroceryCategorySection(),
-              18.height,
+              6.height,
 
               // 7. Trending & Flash Deals Horizontal Carousel
               _buildTrendingSection(),
@@ -814,7 +814,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          3.height,
+          0.1.height,
           // Location Header
           GestureDetector(
             onTap: _openLocationPicker,
@@ -1808,13 +1808,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   letterSpacing: -0.3,
                 ),
               ),
-              16.height,
+              6.height,
               ...groups.map((group) {
                 final subcats = catProvider.categoriesForGroup(group.id);
                 if (subcats.isEmpty) return const SizedBox.shrink();
 
                 return Padding(
-                  padding: EdgeInsets.only(bottom: 16.h),
+                  padding: EdgeInsets.only(bottom: 6.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

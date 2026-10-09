@@ -27,12 +27,33 @@ class ProductDetailRepo {
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
+      print('[PVBS-REPO] response.data type: ${response.data.runtimeType}');
+      print('[PVBS-REPO] response.data keys: ${response.data is Map ? (response.data as Map).keys.toList() : "not a map"}');
+
       if (response.data is Map<String, dynamic>) {
-        return ProductDetailModel.fromJson(response.data as Map<String, dynamic>);
+        final map = response.data as Map<String, dynamic>;
+        
+        // Backend /api/products/:id returns the product row directly at the top level,
+        // with `variations` and `offers` arrays nested within it.
+        // Some endpoints wrap in 'data' or 'product' — handle both.
+        final productData = (map['data'] is Map<String, dynamic>)
+            ? map['data'] as Map<String, dynamic>
+            : (map['product'] is Map<String, dynamic>)
+                ? map['product'] as Map<String, dynamic>
+                : map;
+        
+        print('[PVBS-REPO] productData keys: ${productData.keys.toList()}');
+        print('[PVBS-REPO] variations raw: ${productData['variations']}');
+        
+        if (productData is Map<String, dynamic>) {
+          return ProductDetailModel.fromJson(productData);
+        }
       }
       return null;
-    } catch (e) {
+    } catch (e, st) {
       // Re-throw or log
+      print("Error fetching product detail: $e");
+      print(st);
       return null;
     }
   }

@@ -471,10 +471,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   child: GridView.builder(
                                     physics: const BouncingScrollPhysics(),
                                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.84,
-                                      crossAxisSpacing: 10.w,
-                                      mainAxisSpacing: 10.h,
+                                      crossAxisCount: 3,
+                                      childAspectRatio: 0.7,
+                                      crossAxisSpacing: 8.w,
+                                      mainAxisSpacing: 8.h,
                                     ),
                                     itemCount: liveSubcategories.length,
                                     itemBuilder: (context, idx) {
@@ -528,10 +528,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   child: GridView.builder(
                                     physics: const BouncingScrollPhysics(),
                                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.84,
-                                      crossAxisSpacing: 10.w,
-                                      mainAxisSpacing: 10.h,
+                                      crossAxisCount: 3,
+                                      childAspectRatio: 0.7,
+                                      crossAxisSpacing: 8.w,
+                                      mainAxisSpacing: 8.h,
                                     ),
                                     itemCount: (_fallbackCategories[_selectedCategoryIndex % _fallbackCategories.length]['subcategories'] as List).length,
                                     itemBuilder: (context, idx) {
@@ -585,83 +585,71 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         onTap();
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(7.r),
-          border: Border.all(
-            color: const Color(0xFFE9EDF4),
-            width: 1.1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1B273A).withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+        color: Colors.transparent,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Top Preview Container
-            Expanded(
-              flex: 5,
-              child: Center(
+            FractionallySizedBox(
+              widthFactor: 0.75,
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                borderRadius: BorderRadius.circular(6.r),
                 child: (imgUrl != null && imgUrl.isNotEmpty)
-                      ? Padding(
-                          padding: EdgeInsets.all(8.r),
-                          child: Image.network(
-                              imgUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  iconData,
-                                  color: AppColors.brandPurple,
-                                  size: 28.sp,
-                                );
-                              },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.5,
-                                      color: AppColors.brandPurple,
-                                    ),
-                                  ),
-                                );
-                              },
+                    ? Image.network(
+                        imgUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: const Color(0xFFF4F6FA),
+                            child: Icon(
+                              iconData,
+                              color: AppColors.brandPurple,
+                              size: 28.sp,
                             ),
-                          )
-                      : Icon(
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: const Color(0xFFF4F6FA),
+                            child: Center(
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: AppColors.brandPurple,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: const Color(0xFFF4F6FA),
+                        child: Icon(
                           iconData,
                           color: AppColors.brandPurple,
                           size: 28.sp,
                         ),
+                      ),
               ),
             ),
-
-            // Bottom Name Label
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                child: Center(
-                  child: Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.plusJakartaSans(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      height: 1.18,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: Text(
+                name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.plusJakartaSans(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.2,
                 ),
               ),
             ),
@@ -675,38 +663,39 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget _buildShimmerGrid() {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.84,
+        crossAxisCount: 3,
+        childAspectRatio: 0.7,
         crossAxisSpacing: 10.w,
         mainAxisSpacing: 10.h,
       ),
       itemCount: 6,
       itemBuilder: (context, idx) {
         return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: const Color(0xFFE9EDF4)),
-          ),
-          padding: EdgeInsets.all(8.r),
+          color: Colors.transparent,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                flex: 5,
-                child: Container(
+              FractionallySizedBox(
+                widthFactor: 0.75,
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F5F9),
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
                 ),
               ),
+              ),
               8.height,
-              Container(
-                height: 12.h,
-                width: 60.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F5F9),
-                  borderRadius: BorderRadius.circular(4.r),
+              Center(
+                child: Container(
+                  height: 12.h,
+                  width: 60.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F5F9),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
                 ),
               ),
             ],

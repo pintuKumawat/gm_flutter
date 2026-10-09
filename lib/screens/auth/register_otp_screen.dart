@@ -306,23 +306,36 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Verify Registration OTP',
+          style: AppTextStyles.plusJakartaSans(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               40.height,
-              _buildLogo(),
-              36.height,
               _buildHeader(),
               32.height,
-              _buildOtpInput(),
-              140.height,
-              _buildVerifyButton(),
-              36.height,
+              _buildOtpInputRow(),
+              32.height,
               _buildBottomActions(),
+              const Spacer(),
+              _buildVerifyButton(),
               24.height,
             ],
           ),
@@ -331,140 +344,75 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
     );
   }
 
-  Widget _buildLogo() {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: 'grah ',
-            style: AppTextStyles.poppins(
-              fontSize: 34.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.brandPurple,
-              letterSpacing: -0.5,
-            ),
-          ),
-          TextSpan(
-            text: 'mitra',
-            style: AppTextStyles.poppins(
-              fontSize: 34.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.brandOrange,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Verify Registration OTP',
+          'Enter the 4-digit OTP sent to',
           style: AppTextStyles.plusJakartaSans(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.3,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF1E293B),
           ),
+          textAlign: TextAlign.center,
         ),
         8.height,
-        RichText(
-          text: TextSpan(
-            style: AppTextStyles.plusJakartaSans(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '+91 ${widget.registerData.phone}',
+              style: AppTextStyles.plusJakartaSans(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E293B),
+              ),
             ),
-            children: [
-              const TextSpan(text: 'Enter the 4-digit OTP sent to '),
-              TextSpan(
-                text: '+91 ${widget.registerData.phone}',
+            8.width,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Edit',
                 style: AppTextStyles.plusJakartaSans(
-                  fontSize: 14.sp,
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: AppColors.brandPurple,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildOtpInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: _isOtpComplete
-              ? AppColors.success
-              : AppColors.borderPrimary,
-          width: 1.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _isOtpComplete
-                ? AppColors.success.withValues(alpha: 0.12)
-                : AppColors.borderPrimary.withValues(alpha: 0.12),
-            blurRadius: 12,
-            spreadRadius: 0,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lock_outline_rounded,
-            color: _isOtpComplete
-                ? AppColors.success
-                : AppColors.brandPurple,
-            size: 22.sp,
-          ),
-          12.width,
-          Container(
-            width: 1.2.w,
-            height: 28.h,
-            color: AppColors.borderSubtle,
-          ),
-          12.width,
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(4, (index) {
-                return _buildDigitBox(index);
-              }),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildOtpInputRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (index) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.w),
+          child: _buildDigitBox(index),
+        );
+      }),
     );
   }
 
   Widget _buildDigitBox(int index) {
-    final hasValue = _otpControllers[index].text.isNotEmpty;
     final isFocused = _focusNodes[index].hasFocus;
 
     return Container(
-      width: 40.w,
-      height: 44.h,
+      width: 45.w,
+      height: 50.h,
       decoration: BoxDecoration(
-        color: hasValue
-            ? AppColors.brandPurple.withValues(alpha: 0.06)
-            : AppColors.subtleBackground,
-        borderRadius: BorderRadius.circular(10.r),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
-          color: isFocused
-              ? AppColors.borderFocused
-              : (hasValue ? AppColors.borderPrimary : AppColors.borderSubtle),
-          width: isFocused ? 2.0 : 1.2,
+          color: isFocused ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          width: 1.5,
         ),
       ),
       alignment: Alignment.center,
@@ -478,18 +426,12 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           LengthLimitingTextInputFormatter(1),
         ],
         style: AppTextStyles.plusJakartaSans(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+          fontSize: 20.sp,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF1E293B),
         ),
-        cursorColor: AppColors.borderFocused,
-        decoration: InputDecoration(
-          hintText: '${index + 1}',
-          hintStyle: AppTextStyles.plusJakartaSans(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textHint.withValues(alpha: 0.4),
-          ),
+        cursorColor: AppColors.brandPurple,
+        decoration: const InputDecoration(
           border: InputBorder.none,
           isDense: true,
           contentPadding: EdgeInsets.zero,
@@ -514,151 +456,67 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
     );
   }
 
-  Widget _buildVerifyButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _isOtpComplete ? 1.0 : 0.85,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _isLoading ? null : _handleVerify,
-            borderRadius: BorderRadius.circular(18.r),
-            splashColor: Colors.white.withValues(alpha: 0.2),
-            highlightColor: Colors.transparent,
-            child: Ink(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppColors.buttonGradientStart,
-                    AppColors.buttonGradientEnd,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.buttonShadow,
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isLoading)
-                      SizedBox(
-                        width: 18.w,
-                        height: 18.w,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    else ...[
-                      Text(
-                        'Verify & Create Account',
-                        style: AppTextStyles.plusJakartaSans(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      8.width,
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 20.sp,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBottomActions() {
     final canResend = _countdownSeconds == 0;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Flexible(
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              Navigator.pop(context);
-            },
-            borderRadius: BorderRadius.circular(6.r),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 2.w),
-              child: Text(
-                'Back to details',
-                style: AppTextStyles.plusJakartaSans(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  decoration: TextDecoration.underline,
-                  decorationColor: AppColors.textSecondary,
-                ),
-              ),
+        Text(
+          "Didn't get the OTP? ",
+          style: AppTextStyles.plusJakartaSans(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        GestureDetector(
+          onTap: canResend ? _handleResend : null,
+          child: Text(
+            canResend ? 'Resend OTP' : 'Resend in ${_countdownSeconds}s',
+            style: AppTextStyles.plusJakartaSans(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: canResend ? AppColors.brandPurple : const Color(0xFF94A3B8),
             ),
           ),
         ),
-        Flexible(
-          child: canResend
-              ? InkWell(
-                  onTap: _handleResend,
-                  borderRadius: BorderRadius.circular(6.r),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 2.w),
-                    child: Text(
-                      'Resend OTP',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.brandPurple,
-                      ),
-                    ),
-                  ),
-                )
-              : RichText(
-                  text: TextSpan(
-                    style: AppTextStyles.plusJakartaSans(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Resend in '),
-                      TextSpan(
-                        text: '${_countdownSeconds}s',
-                        style: AppTextStyles.plusJakartaSans(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.brandPurple,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildVerifyButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (_isOtpComplete && !_isLoading) ? _handleVerify : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandPurple,
+          disabledBackgroundColor: AppColors.brandPurple.withValues(alpha: 0.5),
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          elevation: 0,
+        ),
+        child: _isLoading
+            ? SizedBox(
+                height: 20.h,
+                width: 20.h,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                'Verify & Create Account',
+                style: AppTextStyles.plusJakartaSans(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+      ),
     );
   }
 }

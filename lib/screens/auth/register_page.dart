@@ -40,6 +40,24 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    final focusNodes = [
+      _firstNameFocusNode,
+      _lastNameFocusNode,
+      _phoneFocusNode,
+      _emailFocusNode,
+      _passwordFocusNode,
+      _referralFocusNode
+    ];
+    for (var node in focusNodes) {
+      node.addListener(() {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -206,76 +224,71 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              30.height,
-              _buildLogo(),
-              24.height,
-              _buildHeader(),
-              24.height,
-              _buildNameFields(),
-              14.height,
-              _buildPhoneInputField(),
-              14.height,
-              _buildInputField(
-                controller: _emailController,
-                focusNode: _emailFocusNode,
-                hintText: 'Email Address',
-                keyboardType: TextInputType.emailAddress,
-                icon: Icons.email_outlined,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        20.height,
+                        _buildLogo(),
+                        20.height,
+                        _buildHeader(),
+                        24.height,
+                        _buildNameFields(),
+                        16.height,
+                        _buildPhoneInputField(),
+                        16.height,
+                        _buildInputField(
+                          controller: _emailController,
+                          focusNode: _emailFocusNode,
+                          hintText: 'Email Address',
+                          keyboardType: TextInputType.emailAddress,
+                          icon: Icons.email_outlined,
+                        ),
+                        16.height,
+                        _buildPasswordField(),
+                        16.height,
+                        _buildInputField(
+                          controller: _referralController,
+                          focusNode: _referralFocusNode,
+                          hintText: 'Referral Code (Optional)',
+                          keyboardType: TextInputType.text,
+                          icon: Icons.card_giftcard_rounded,
+                          textCapitalization: TextCapitalization.characters,
+                        ),
+                        const Spacer(),
+                        _buildRegisterButton(),
+                        12.height,
+                        _buildLoginCta(),
+                        20.height,
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              14.height,
-              _buildPasswordField(),
-              14.height,
-              _buildInputField(
-                controller: _referralController,
-                focusNode: _referralFocusNode,
-                hintText: 'Referral Code (Optional)',
-                keyboardType: TextInputType.text,
-                icon: Icons.card_giftcard_rounded,
-                textCapitalization: TextCapitalization.characters,
-              ),
-              36.height,
-              _buildRegisterButton(),
-              24.height,
-              _buildLoginCta(),
-              24.height,
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildLogo() {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: 'grah ',
-            style: AppTextStyles.poppins(
-              fontSize: 32.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.brandPurple,
-              letterSpacing: -0.5,
-            ),
-          ),
-          TextSpan(
-            text: 'mitra',
-            style: AppTextStyles.poppins(
-              fontSize: 32.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.brandOrange,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
+    return Image.asset(
+      'assets/images/Grahmitra_logo.png',
+      height: 32.h,
+      fit: BoxFit.contain,
+      alignment: Alignment.centerLeft,
     );
   }
 
@@ -334,16 +347,14 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildPhoneInputField() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(16.r),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _phoneFocusNode.hasFocus
-              ? AppColors.borderFocused
-              : AppColors.borderPrimary,
-          width: _phoneFocusNode.hasFocus ? 2.0 : 1.8,
+          color: _phoneFocusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          width: 1.5,
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 0.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -386,16 +397,16 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               cursorColor: AppColors.borderFocused,
               decoration: InputDecoration(
-                hintText: 'Mobile number',
+                hintText: '10-digit mobile number',
                 hintStyle: AppTextStyles.plusJakartaSans(
-                  fontSize: 14.sp,
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textHint,
                   letterSpacing: 0,
                 ),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                contentPadding: EdgeInsets.symmetric(vertical: 8.h),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -435,16 +446,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(16.r),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: focusNode.hasFocus
-              ? AppColors.borderFocused
-              : AppColors.borderPrimary,
-          width: focusNode.hasFocus ? 2.0 : 1.8,
+          color: focusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          width: 1.5,
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 0.h),
       child: Row(
         children: [
           Icon(icon, color: AppColors.iconSubtle, size: 20.sp),
@@ -470,7 +479,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                contentPadding: EdgeInsets.symmetric(vertical: 8.h),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -483,16 +492,14 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildPasswordField() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inputBackground,
-        borderRadius: BorderRadius.circular(16.r),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _passwordFocusNode.hasFocus
-              ? AppColors.borderFocused
-              : AppColors.borderPrimary,
-          width: _passwordFocusNode.hasFocus ? 2.0 : 1.8,
+          color: _passwordFocusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          width: 1.5,
         ),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 0.h),
       child: Row(
         children: [
           Icon(Icons.lock_outline_rounded, color: AppColors.iconSubtle, size: 20.sp),
@@ -517,18 +524,19 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                contentPadding: EdgeInsets.symmetric(vertical: 8.h),
               ),
               onChanged: (_) => setState(() {}),
             ),
           ),
-          IconButton(
-            onPressed: () {
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
               setState(() {
                 _isPasswordObscured = !_isPasswordObscured;
               });
             },
-            icon: Icon(
+            child: Icon(
               _isPasswordObscured
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
@@ -542,74 +550,36 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildRegisterButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _handleRegister,
-          borderRadius: BorderRadius.circular(18.r),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.transparent,
-          child: Ink(
-            padding: EdgeInsets.symmetric(horizontal: 26.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.buttonGradientStart,
-                  AppColors.buttonGradientEnd,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18.r),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.buttonShadow,
-                  blurRadius: 18,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_isLoading)
-                    SizedBox(
-                      width: 18.w,
-                      height: 18.w,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white,
-                        ),
-                      ),
-                    )
-                  else ...[
-                    Text(
-                      'Register & Continue',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    8.width,
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 20.sp,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleRegister,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.brandPurple,
+          disabledBackgroundColor: AppColors.brandPurple.withValues(alpha: 0.5),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
           ),
+          elevation: 0,
         ),
+        child: _isLoading
+            ? SizedBox(
+                height: 20.h,
+                width: 20.h,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                'Register & Continue',
+                style: AppTextStyles.plusJakartaSans(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }

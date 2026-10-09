@@ -140,33 +140,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('Edit Profile', style: AppTextStyles.screenTitle),
-        actions: [
-          Consumer<ProfileProvider>(
-            builder: (context, provider, _) {
-              return TextButton(
-                onPressed: provider.isSaving ? null : _save,
-                child: provider.isSaving
-                    ? SizedBox(
-                        width: 18.r,
-                        height: 18.r,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.brandPurple,
-                        ),
-                      )
-                    : Text(
-                        'Save',
-                        style: AppTextStyles.plusJakartaSans(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.brandPurple,
-                        ),
-                      ),
-              );
-            },
-          ),
-          8.width,
-        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnim,
@@ -315,49 +288,51 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                     },
                   ),
 
-                  30.height,
-
-                  // Save Button
-                  Consumer<ProfileProvider>(
-                    builder: (context, provider, _) {
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: provider.isSaving ? null : _save,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.brandPurple,
-                            disabledBackgroundColor:
-                                AppColors.brandPurple.withValues(alpha: 0.5),
-                            elevation: 0,
-                            padding: EdgeInsets.symmetric(vertical: 15.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14.r),
-                            ),
-                          ),
-                          child: provider.isSaving
-                              ? SizedBox(
-                                  width: 20.r,
-                                  height: 20.r,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.white,
-                                  ),
-                                )
-                              : Text(
-                                  'Save Changes',
-                                  style: AppTextStyles.plusJakartaSans(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.white,
-                                  ),
-                                ),
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+          child: Consumer<ProfileProvider>(
+            builder: (context, provider, _) {
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: provider.isSaving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brandPurple,
+                    disabledBackgroundColor:
+                        AppColors.brandPurple.withValues(alpha: 0.5),
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child: provider.isSaving
+                      ? SizedBox(
+                          width: 20.r,
+                          height: 20.r,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : Text(
+                          'Save Changes',
+                          style: AppTextStyles.plusJakartaSans(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.white,
+                          ),
+                        ),
+                ),
+              );
+            },
           ),
         ),
       ),

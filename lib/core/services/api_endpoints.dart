@@ -50,9 +50,10 @@ class ApiEndpoints {
   static String customerAddressSetPrimary(int id) => '/api/customer/address/$id/set-primary';
   static String customerAddressUpdate(int id) => '/api/customer/address/$id';
 
-  // Customer Wallet
+  // Customer Wallet & Referrals
   static const String wallet = '/api/customer/my-wallet';
   static const String customerWallet = '/api/customer/my-wallet';
+  static const String myReferrals = '/api/customer/my-referrals';
 
   // Orders
   static const String orders = '/api/customer/orders';

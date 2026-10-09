@@ -81,18 +81,69 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '$title added to cart!',
-                style: AppTextStyles.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+            Container(
+              padding: EdgeInsets.all(6.r),
+              decoration: const BoxDecoration(
+                color: AppColors.brandPurple,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 16,
               ),
             ),
+            10.width,
+            if (imgPath != null && imgPath.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: Image.network(
+                  imgPath,
+                  width: 36.w,
+                  height: 36.w,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 36.w,
+                    height: 36.w,
+                    color: AppColors.subtleBackground,
+                    child: const Icon(
+                      Icons.image_not_supported_rounded,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              10.width,
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.plusJakartaSans(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  2.height,
+                  Text(
+                    'added to cart',
+                    style: AppTextStyles.plusJakartaSans(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            8.width,
             GestureDetector(
               onTap: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -101,22 +152,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   MaterialPageRoute(builder: (_) => const CartScreen()),
                 );
               },
-              child: Text(
-                'VIEW CART',
-                style: AppTextStyles.plusJakartaSans(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.brandOrange,
+              child: Container(
+                padding: EdgeInsets.all(8.r),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPurple,
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: const Icon(
+                  Icons.visibility_rounded,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF168A35),
-        duration: const Duration(seconds: 2),
+        backgroundColor: Colors.white,
+        elevation: 6,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+        duration: const Duration(milliseconds: 2500),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          side: const BorderSide(color: Color(0xFFE5E9F0), width: 1),
+        ),
+        margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       ),
     );
     Future.delayed(const Duration(milliseconds: 1800), () {
@@ -1005,24 +1065,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.local_fire_department_rounded,
-                  color: AppColors.brandOrange,
-                  size: 18.sp,
-                ),
-                6.width,
-                Text(
-                  'RELATED PRODUCTS',
-                  style: AppTextStyles.plusJakartaSans(
-                    fontSize: 13.5.sp,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF0F172A),
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
+            child: Text(
+              'RELATED PRODUCTS',
+              style: AppTextStyles.plusJakartaSans(
+                fontSize: 13.5.sp,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF0F172A),
+                letterSpacing: 0.4,
+              ),
             ),
           ),
           12.height,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:grahmitracus/core/config/env_config.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
-import 'package:grahmitracus/screens/main_nav/main_navigation_screen.dart';
+import 'package:grahmitracus/screens/splash/splash_screen.dart';
 
 import 'package:provider/provider.dart';
 import 'package:grahmitracus/providers/auth/register_provider.dart';
@@ -25,6 +25,7 @@ import 'package:grahmitracus/providers/payment/payment_provider.dart';
 
 import 'package:grahmitracus/providers/profile/profile_provider.dart';
 import 'package:grahmitracus/providers/profile/wallet_provider.dart';
+import 'package:grahmitracus/providers/profile/referral_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:grahmitracus/core/services/firebase_notification_service.dart';
 
@@ -56,6 +57,7 @@ void main() async {
           },
         ),
         ChangeNotifierProvider(create: (_) => WalletProvider()..fetchWallet()),
+        ChangeNotifierProvider(create: (_) => ReferralProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()..init()),
         ChangeNotifierProvider(create: (_) => CategoryGroupProvider()..fetchGroups()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()..fetchCategories()),
@@ -100,7 +102,7 @@ class MyApp extends StatelessWidget {
           home: child,
         );
       },
-      child: const MainNavigationScreen(),
+      child: const SplashScreen(),
     );
   }
 }

@@ -381,38 +381,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     10.height,
                     const Divider(color: Color(0xFFE2E8F0), height: 1),
-                    10.height,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.bolt_rounded,
-                              color: Color(0xFFF59E0B),
-                              size: 18,
-                            ),
-                            4.width,
-                            Text(
-                              'Estimated Delivery',
-                              style: AppTextStyles.plusJakartaSans(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '10-12 Mins',
-                          style: AppTextStyles.plusJakartaSans(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF16A34A),
-                          ),
-                        ),
-                      ],
-                    ),
+
                     10.height,
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1020,66 +989,100 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ),
 
-        // Stepper: [-] [Qty] [+]
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF168A35),
-            borderRadius: BorderRadius.circular(8.r),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF168A35).withValues(alpha: 0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 1.5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  cart.decrement(item.id);
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
-                  child: Icon(
-                    item.quantity == 1
-                        ? Icons.delete_outline_rounded
-                        : Icons.remove_rounded,
-                    color: Colors.white,
-                    size: 14.sp,
+        // Stepper & Delete
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF168A35),
+                borderRadius: BorderRadius.circular(8.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF168A35).withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1.5),
                   ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      cart.decrement(item.id);
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+                      child: Icon(
+                        item.quantity == 1
+                            ? Icons.delete_outline_rounded
+                            : Icons.remove_rounded,
+                        color: Colors.white,
+                        size: 14.sp,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    constraints: BoxConstraints(minWidth: 18.w),
+                    child: Text(
+                      '${item.quantity}',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.plusJakartaSans(
+                        fontSize: 11.5.sp,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      cart.increment(item.id);
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 14.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            6.height,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                cart.removeItem(item.id);
+              },
+              child: Padding(
+                padding: EdgeInsets.only(right: 2.w),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      color: const Color(0xFFEF4444),
+                      size: 12.sp,
+                    ),
+                    2.width,
+                    Text(
+                      'Remove',
+                      style: AppTextStyles.plusJakartaSans(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFEF4444),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Container(
-                constraints: BoxConstraints(minWidth: 18.w),
-                child: Text(
-                  '${item.quantity}',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.plusJakartaSans(
-                    fontSize: 11.5.sp,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  cart.increment(item.id);
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 14.sp,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -1580,12 +1583,12 @@ class _CartScreenState extends State<CartScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.savings_rounded,
-                    color: Color(0xFF16A34A),
-                    size: 16,
-                  ),
-                  6.width,
+                  // const Icon(
+                  //   Icons.savings_rounded,
+                  //   color: Color(0xFF16A34A),
+                  //   size: 16,
+                  // ),
+                  // 6.width,
                   Expanded(
                     child: Text(
                       'Yay! You saved ₹${cart.totalSavings.toStringAsFixed(0)} on this order',
@@ -1734,9 +1737,9 @@ class _CartScreenState extends State<CartScreen> {
                   alpha: 0.6,
                 ),
                 elevation: 0,
-                padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 13.h),
+                padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 10.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
               ),
               child: (orderProv.isPlacingOrder || cart.isValidatingCheckout || context.watch<PaymentProvider>().isProcessing)

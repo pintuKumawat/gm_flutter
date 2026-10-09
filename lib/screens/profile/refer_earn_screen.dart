@@ -1,14 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/size__extensions.dart';
+import 'package:grahmitracus/providers/profile/wallet_provider.dart';
+import 'package:grahmitracus/providers/profile/referral_provider.dart';
 
-class ReferEarnScreen extends StatelessWidget {
+class ReferEarnScreen extends StatefulWidget {
   const ReferEarnScreen({super.key});
 
-  final String _referralCode = 'GM12345';
-  final String _referralLink = 'grahmitra.com/refer/GM12345';
+  @override
+  State<ReferEarnScreen> createState() => _ReferEarnScreenState();
+}
+
+class _ReferEarnScreenState extends State<ReferEarnScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final walletProvider = context.read<WalletProvider>();
+        if (walletProvider.wallet == null) {
+          walletProvider.fetchWallet();
+        }
+        
+        final referralProvider = context.read<ReferralProvider>();
+        if (referralProvider.referralData == null) {
+          referralProvider.fetchReferralHistory();
+        }
+      }
+    });
+  }
 
   void _copyToClipboard(BuildContext context, String text, String message) {
     Clipboard.setData(ClipboardData(text: text)).then((_) {
@@ -33,14 +56,20 @@ class ReferEarnScreen extends StatelessWidget {
     });
   }
 
-  void _shareReferral(BuildContext context) {
+  void _shareReferral(BuildContext context, String code) {
+    final String referralLink = 'grahmitra.com/refer/$code';
     final String shareMessage =
-        'Join GrahMitra using my referral code $_referralCode and enjoy the available referral benefits. Link: $_referralLink';
+        'Join GrahMitra using my referral code $code and enjoy the available referral benefits. Link: $referralLink';
     _copyToClipboard(context, shareMessage, 'Share message copied to clipboard');
   }
 
   @override
   Widget build(BuildContext context) {
+    final walletProvider = context.watch<WalletProvider>();
+    final referralProvider = context.watch<ReferralProvider>();
+    final referralCode = walletProvider.wallet?.referralCode ?? 'N/A';
+    final isLoading = walletProvider.isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -126,19 +155,29 @@ class ReferEarnScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _referralCode,
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.brandPurple,
-                      ),
-                    ),
+                    isLoading
+                        ? SizedBox(
+                            height: 20.h,
+                            width: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.brandPurple,
+                            ),
+                          )
+                        : Text(
+                            referralCode,
+                            style: AppTextStyles.plusJakartaSans(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.brandPurple,
+                            ),
+                          ),
                     IconButton(
                       icon: Icon(Icons.copy_rounded, color: AppColors.textPrimary, size: 20.sp),
                       onPressed: () {
+                        if (referralCode == 'N/A' || isLoading) return;
                         HapticFeedback.selectionClick();
-                        _copyToClipboard(context, _referralCode, 'Referral code copied');
+                        _copyToClipboard(context, referralCode, 'Referral code copied');
                       },
                     ),
                   ],
@@ -151,8 +190,9 @@ class ReferEarnScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    if (referralCode == 'N/A' || isLoading) return;
                     HapticFeedback.selectionClick();
-                    _shareReferral(context);
+                    _shareReferral(context, referralCode);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brandPurple,
@@ -202,44 +242,118 @@ class ReferEarnScreen extends StatelessWidget {
               
               40.height,
               // History Section
-              Text(
-                'Referral History',
-                style: AppTextStyles.plusJakartaSans(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Referred Friends',
+                    style: AppTextStyles.plusJakartaSans(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Total: ${referralProvider.friends.length}',
+                    style: AppTextStyles.plusJakartaSans(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.brandPurple,
+                    ),
+                  ),
+                ],
               ),
               24.height,
-              Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.group_outlined,
-                      size: 48.sp,
-                      color: AppColors.iconSubtle,
-                    ),
-                    16.height,
-                    Text(
-                      'No referrals yet',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+              if (referralProvider.isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (referralProvider.friends.isEmpty)
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.group_outlined,
+                        size: 48.sp,
+                        color: AppColors.iconSubtle,
                       ),
-                    ),
-                    8.height,
-                    Text(
-                      'Invite your friends and start earning rewards.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 13.sp,
-                        color: AppColors.textSecondary,
+                      16.height,
+                      Text(
+                        'No referrals yet',
+                        style: AppTextStyles.plusJakartaSans(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
+                      8.height,
+                      Text(
+                        'Invite your friends and start earning rewards.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.plusJakartaSans(
+                          fontSize: 13.sp,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: referralProvider.friends.length,
+                  separatorBuilder: (context, index) => 12.height,
+                  itemBuilder: (context, index) {
+                    final friend = referralProvider.friends[index];
+                    return Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: AppColors.subtleBackground,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: AppColors.borderSubtle),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20.r,
+                            backgroundColor: AppColors.brandPurple.withValues(alpha: 0.1),
+                            child: Text(
+                              friend.initials,
+                              style: AppTextStyles.plusJakartaSans(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.brandPurple,
+                              ),
+                            ),
+                          ),
+                          12.width,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  friend.displayName,
+                                  style: AppTextStyles.plusJakartaSans(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                4.height,
+                                Text(
+                                  friend.createdAt.split('T')[0],
+                                  style: AppTextStyles.plusJakartaSans(
+                                    fontSize: 12.sp,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
               32.height,
             ],
           ),

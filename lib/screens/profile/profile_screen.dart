@@ -228,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildReferCard(
                       icon: Icons.card_giftcard_rounded,
                       title: 'Refer & Earn',
-                      subtitle: 'Invite your friends and earn rewards',
+                      subtitle: 'Invite friends and earn wallet rewards',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -660,23 +660,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
           decoration: BoxDecoration(
-            color: AppColors.subtleBackground,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2FCB82), Color(0xFF1AA864)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: AppColors.borderSubtle),
           ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8.r),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
-                  color: AppColors.brandPurple.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: AppColors.brandPurple, size: 18.sp),
+                child: Icon(icon, color: Colors.white, size: 24.sp),
               ),
-              12.width,
+              14.width,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,26 +687,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       title,
                       style: AppTextStyles.plusJakartaSans(
-                        fontSize: 13.5.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
                       ),
                     ),
-                    2.height,
+                    4.height,
                     Text(
                       subtitle,
                       style: AppTextStyles.plusJakartaSans(
                         fontSize: 11.5.sp,
-                        color: AppColors.textSecondary,
+                        color: Colors.white.withValues(alpha: 0.95),
+                        height: 1.2,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.iconSubtle,
-                size: 20.sp,
+              12.width,
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Invite',
+                      style: AppTextStyles.plusJakartaSans(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1AA864),
+                      ),
+                    ),
+                    4.width,
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: const Color(0xFF1AA864),
+                      size: 14.sp,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/responsive.dart';
 import 'package:grahmitracus/models/product/home_product_model.dart';
+import 'package:grahmitracus/widgets/product_variation_bottom_sheet.dart';
 
 /// Clean, modern Product Card matching Next.js Frontend Product.js
 ///
@@ -254,140 +255,133 @@ class ProductCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            // Brand & Subcategory Header (e.g., FORTUNE • OILS)
-                            SizedBox(
-                              height: 11.h,
-                              child: ((brand != null && brand.isNotEmpty) ||
-                                      (subcategory != null && subcategory.isNotEmpty))
-                                  ? Padding(
-                                      padding: EdgeInsets.only(bottom: 2.h),
+                      // Brand & Subcategory Header (e.g., FORTUNE • OILS)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 2.h),
+                        child: Text(
+                          ((brand != null && brand.isNotEmpty) ||
+                                  (subcategory != null && subcategory.isNotEmpty))
+                              ? [
+                                  if (brand != null && brand.isNotEmpty)
+                                    brand.toUpperCase(),
+                                  if (subcategory != null && subcategory.isNotEmpty)
+                                    subcategory.toUpperCase(),
+                                ].join(' • ')
+                              : ' ',
+                          style: AppTextStyles.plusJakartaSans(
+                            fontSize: 7.5.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF64748B),
+                            letterSpacing: 0.4,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+
+                      // Product Title
+                      SizedBox(
+                        height: 24.2.sp, // Reserves exactly 2 lines (10.5.sp * 1.15 height * 2)
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            _toTitleCase(product.title),
+                            style: AppTextStyles.plusJakartaSans(
+                              fontSize: 10.5.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                              height: 1.15,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+
+                      3.height,
+
+                      // Pills Row: Weight/Variation + Low Stock
+                      Row(
+                        children: [
+                          // Weight Pill
+                          Flexible(
+                            child: Visibility(
+                              visible: weightText != null && weightText.isNotEmpty,
+                              maintainSize: true,
+                              maintainAnimation: true,
+                              maintainState: true,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4.5.w,
+                                  vertical: 1.2.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFAF5FF),
+                                  borderRadius: BorderRadius.circular(4.r),
+                                  border: Border.all(
+                                    color: const Color(0xFFE9D5FF),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.shopping_bag_outlined,
+                                      size: 7.5.sp,
+                                      color: const Color(0xFF7E22CE),
+                                    ),
+                                    2.5.width,
+                                    Flexible(
                                       child: Text(
-                                        [
-                                          if (brand != null && brand.isNotEmpty)
-                                            brand.toUpperCase(),
-                                          if (subcategory != null &&
-                                              subcategory.isNotEmpty)
-                                            subcategory.toUpperCase(),
-                                        ].join(' • '),
+                                        _toTitleCase((weightText == null || weightText.isEmpty) ? ' ' : weightText),
                                         style: AppTextStyles.plusJakartaSans(
                                           fontSize: 7.5.sp,
                                           fontWeight: FontWeight.w800,
-                                          color: const Color(0xFF64748B),
-                                          letterSpacing: 0.4,
+                                          color: const Color(0xFF6B21A8),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-
-                            // Product Title
-                            SizedBox(
-                              height: 29.h,
-                              child: Text(
-                                _toTitleCase(product.title),
-                                style: AppTextStyles.plusJakartaSans(
-                                  fontSize: 10.5.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF1E293B),
-                                  height: 1.15,
+                                    ),
+                                  ],
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                          ),
 
-                            const Spacer(),
-                            2.height,
-
-                            // Pills Row: Weight/Variation + Low Stock
-                            Row(
-                              children: [
-                                // Weight Pill
-                                Flexible(
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 4.5.w,
-                                      vertical: 1.2.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFAF5FF),
-                                      borderRadius: BorderRadius.circular(4.r),
-                                      border: Border.all(
-                                        color: const Color(0xFFE9D5FF),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.shopping_bag_outlined,
-                                          size: 7.5.sp,
-                                          color: const Color(0xFF7E22CE),
-                                        ),
-                                        2.5.width,
-                                        Flexible(
-                                          child: Text(
-                                            _toTitleCase(weightText),
-                                            style:
-                                                AppTextStyles.plusJakartaSans(
-                                                  fontSize: 7.5.sp,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: const Color(
-                                                    0xFF6B21A8,
-                                                  ),
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                          // Low Stock Warning Pill
+                          if (isLowStock) ...[
+                            3.width,
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 4.w,
+                                vertical: 1.2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(4.r),
+                                border: Border.all(
+                                  color: const Color(0xFFFECACA),
+                                  width: 0.8,
                                 ),
-
-                                // Low Stock Warning Pill
-                                if (isLowStock) ...[
-                                  3.width,
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 4.w,
-                                      vertical: 1.2.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFEF2F2),
-                                      borderRadius: BorderRadius.circular(4.r),
-                                      border: Border.all(
-                                        color: const Color(0xFFFECACA),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Only ${product.stockQuantity} left!',
-                                      style: AppTextStyles.plusJakartaSans(
-                                        fontSize: 6.5.sp,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFFDC2626),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
+                              ),
+                              child: Text(
+                                'Only ${product.stockQuantity} left!',
+                                style: AppTextStyles.plusJakartaSans(
+                                  fontSize: 6.5.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
 
-                      5.height,
+                      6.height,
 
-                      // Price & Add to Cart Row (Pinned close to weight pill)
+                      // Price & Add to Cart Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -468,7 +462,7 @@ class ProductCard extends StatelessWidget {
       return GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          onQuantityChanged?.call(1);
+          ProductVariationBottomSheet.handleAddTapped(context, product.id.toString());
         },
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 5.5.w, vertical: 3.5.h),
@@ -514,6 +508,7 @@ class ProductCard extends StatelessWidget {
 
     // Green Qty Stepper (#168a35)
     return Container(
+      padding: EdgeInsets.symmetric(vertical: 3.5.h),
       decoration: BoxDecoration(
         color: const Color(0xFF168A35),
         borderRadius: BorderRadius.circular(8.r),
@@ -527,6 +522,7 @@ class ProductCard extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           GestureDetector(
             onTap: () {
@@ -534,7 +530,7 @@ class ProductCard extends StatelessWidget {
               onQuantityChanged?.call(quantity - 1);
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.5.h),
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
               child: Icon(
                 Icons.remove_rounded,
                 color: Colors.white,
@@ -559,7 +555,7 @@ class ProductCard extends StatelessWidget {
               onQuantityChanged?.call(quantity + 1);
             },
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.5.h),
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
               child: Icon(
                 Icons.add_rounded,
                 color: Colors.white,
