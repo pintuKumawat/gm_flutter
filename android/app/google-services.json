@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "564426203531",
+    "project_id": "grahmitracusmain",
+    "storage_bucket": "grahmitracusmain.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:564426203531:android:0d8447865db57547a74f8e",
+        "android_client_info": {
+          "package_name": "com.example.grahmitracus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANItMojEbnZ5hhd5ukdQAS3vCnmlV4nP4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

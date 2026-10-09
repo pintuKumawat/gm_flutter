@@ -1,0 +1,85 @@
+# Codemagic CI/CD configuration for GrahMitra Customer iOS
+# Generates Release IPA for manual download and App Store upload (Transporter / Xcode)
+# NO automatic push to App Store Connect / TestFlight.
+
+workflows:
+  ios-release:
+    name: iOS Release Build (Manual App Store Upload)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials # Optional: define your APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY in Codemagic UI if using automated signing
+      vars:
+        BUNDLE_ID: "com.kvon.grahmitra"
+    scripts:
+      - name: Prepare environment file (.env)
+        script: |
+          echo "Setting up .env file..."
+          if [ -n "$ENV_FILE" ]; then
+            echo "$ENV_FILE" > .env
+          elif [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              echo "BASE_URL=https://api.grahmitra.com" > .env
+              echo "API_TIMEOUT=15000" >> .env
+            fi
+          fi
+          echo ".env prepared successfully"
+      - name: Get Flutter dependencies
+        script: |
+          flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod repo update --silent || true
+          pod install
+          cd ..
+      - name: Set up code signing (if certificates are provided)
+        script: |
+          # If App Store Connect API key is configured in Codemagic environment variables:
+          if [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
+            echo "Fetching signing files from Apple Developer Portal..."
+            app-store-connect fetch-signing-files "$BUNDLE_ID" \
+              --type IOS_APP_STORE \
+              --create
+            keychain add-certificates
+            xcode-project use-profiles
+          elif [ -n "$CM_CERTIFICATE" ]; then
+            echo "Using manual certificate from Codemagic UI..."
+            keychain initialize
+            keychain add-certificates
+            xcode-project use-profiles
+          else
+            echo "No signing certificate detected in environment. Building will proceed."
+          fi
+      - name: Build iOS Release IPA & Archive
+        script: |
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          echo "Building iOS Release with build number: $BUILD_NUM"
+
+          # If signed profiles are active, build release ipa; otherwise build with --no-codesign fallback
+          if [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] || [ -n "$CM_CERTIFICATE" ]; then
+            flutter build ipa --release --build-number=$BUILD_NUM
+          else
+            flutter build ipa --release --no-codesign --build-number=$BUILD_NUM || \
+            flutter build ios --release --no-codesign --build-number=$BUILD_NUM
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - /Users/builder/Library/Logs/Gym/*.log
+    publishing:
+      # NO automatic push to App Store Connect or TestFlight!
+      # Artifacts (.ipa / .xcarchive) are downloaded manually from Codemagic.
+      email:
+        recipients:
+          # Put your or your manager's email here to receive the download link
+          - pintu@example.com
+        notify:
+          failure: true
+          success: true
