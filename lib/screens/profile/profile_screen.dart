@@ -9,17 +9,24 @@ import 'package:grahmitracus/providers/profile/wallet_provider.dart';
 import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/screens/auth/login_page.dart';
 import 'package:grahmitracus/screens/profile/saved_addresses_screen.dart';
+import 'package:grahmitracus/screens/profile/wallet_screen.dart';
 import 'package:grahmitracus/screens/profile/notifications_screen.dart';
 import 'package:grahmitracus/screens/profile/language_screen.dart';
 import 'package:grahmitracus/screens/profile/customer_support_screen.dart';
-import 'package:grahmitracus/screens/profile/privacy_policy_screen.dart';
 import 'package:grahmitracus/screens/profile/faq_screen.dart';
 import 'package:grahmitracus/core/services/api_endpoints.dart';
 import 'package:grahmitracus/core/services/api_service.dart';
 import 'package:grahmitracus/core/services/auth_storage_service.dart';
 import 'package:grahmitracus/screens/profile/refer_earn_screen.dart';
 import 'package:grahmitracus/screens/profile/edit_profile_screen.dart';
-import 'package:grahmitracus/screens/profile/wallet_screen.dart';
+import 'package:grahmitracus/core/services/firebase_notification_service.dart';
+import 'package:grahmitracus/providers/cart/cart_provider.dart';
+import 'package:grahmitracus/providers/cart/order_provider.dart';
+import 'package:grahmitracus/providers/profile/referral_provider.dart';
+import 'package:grahmitracus/providers/auth/verify_otp_provider.dart';
+import 'package:grahmitracus/providers/auth/send_otp_provider.dart';
+import 'package:grahmitracus/providers/transaction/transaction_provider.dart';
+import 'package:grahmitracus/screens/profile/transactions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -35,89 +42,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<ProfileProvider>().fetchProfile();
+        context.read<LocationProvider>().fetchSavedAddresses();
       }
     });
   }
 
   void _showLogoutDialog(BuildContext context) {
     HapticFeedback.selectionClick();
+    bool isLoggingOut = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        title: Text(
-          'Log Out',
-          style: AppTextStyles.plusJakartaSans(
-            fontWeight: FontWeight.w800,
-            fontSize: 18.sp,
-            color: AppColors.textPrimary,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
           ),
-        ),
-        content: Text(
-          'Are you sure you want to log out of Grahmitra?',
-          style: AppTextStyles.plusJakartaSans(
-            fontSize: 13.sp,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.plusJakartaSans(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+          title: Text(
+            'Log Out',
+            style: AppTextStyles.plusJakartaSans(
+              fontWeight: FontWeight.w800,
+              fontSize: 18.sp,
+              color: AppColors.textPrimary,
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final refreshToken = await AuthStorageService.getRefreshToken();
-                if (refreshToken != null && refreshToken.isNotEmpty) {
-                  await ApiService.instance.post(
-                    ApiEndpoints.logout,
-                    data: {'refreshToken': refreshToken},
-                  );
-                }
-              } catch (_) {}
-
-              await AuthStorageService.clearTokens();
-              ApiService.instance.clearAuthToken();
-
-              if (!context.mounted) return;
-              context.read<ProfileProvider>().reset();
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  settings: const RouteSettings(name: 'LoginPage'),
-                  builder: (context) => const LoginPage(),
+          content: Text(
+            'Are you sure you want to log out of Grahmitra?',
+            style: AppTextStyles.plusJakartaSans(
+              fontSize: 13.sp,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoggingOut
+                  ? null
+                  : () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
               ),
             ),
-            child: Text(
-              'Log Out',
-              style: AppTextStyles.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: AppColors.white,
+            ElevatedButton(
+              onPressed: isLoggingOut
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoggingOut = true);
+
+                      try {
+                        final refreshToken = await AuthStorageService.getRefreshToken();
+                        if (refreshToken != null && refreshToken.isNotEmpty) {
+                          final response = await ApiService.instance.post(
+                            ApiEndpoints.logout,
+                            data: {'refreshToken': refreshToken},
+                          );
+                          debugPrint('Logout response: ${response.data}');
+                        }
+                      } catch (e) {
+                        debugPrint('Logout API call failed or server unreachable: $e');
+                      }
+
+                      // Delete local FCM registration token
+                      await FirebaseNotificationService.deleteToken();
+
+                      // Clear local mobile number, user ID, and auth tokens
+                      await AuthStorageService.clearTokens();
+                      ApiService.instance.clearAuthToken();
+
+                      if (!context.mounted) return;
+
+                      // Clear items placed in cart
+                      context.read<CartProvider>().clearCart();
+
+                      // Reset in-memory session states to isolate data between accounts.
+                      // Preserved data (saved addresses, selected location, order history)
+                      // remains safely preserved on disk under user-isolated keys and on the backend.
+                      context.read<ProfileProvider>().reset();
+                      context.read<LocationProvider>().clearUserData();
+                      context.read<OrderProvider>().reset();
+                      context.read<WalletProvider>().reset();
+                      context.read<ReferralProvider>().reset();
+                      context.read<VerifyOtpProvider>().reset();
+                      context.read<SendOtpProvider>().reset();
+                      context.read<TransactionProvider>().reset();
+
+                      Navigator.pop(dialogContext);
+
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          settings: const RouteSettings(name: 'LoginPage'),
+                          builder: (context) => const LoginPage(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
               ),
+              child: isLoggingOut
+                  ? SizedBox(
+                      width: 16.w,
+                      height: 16.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Log Out',
+                      style: AppTextStyles.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -141,6 +191,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               HapticFeedback.selectionClick();
               context.read<ProfileProvider>().fetchProfile();
+              context.read<LocationProvider>().fetchSavedAddresses();
             },
           ),
         ],
@@ -148,7 +199,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await context.read<ProfileProvider>().fetchProfile();
+            await Future.wait([
+              context.read<ProfileProvider>().fetchProfile(),
+              context.read<LocationProvider>().fetchSavedAddresses(),
+            ]);
           },
           color: AppColors.brandPurple,
           child: SingleChildScrollView(
@@ -213,7 +267,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       builder: (context) =>
                                           const SavedAddressesScreen(),
                                     ),
-                                  );
+                                  ).then((_) {
+                                    if (context.mounted) {
+                                      context.read<LocationProvider>().fetchSavedAddresses();
+                                    }
+                                  });
                                 },
                               ),
                             );
@@ -260,6 +318,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SavedAddressesScreen(),
+                          ),
+                        ).then((_) {
+                          if (context.mounted) {
+                            context.read<LocationProvider>().fetchSavedAddresses();
+                          }
+                        });
+                      },
+                    ),
+
+                    _buildMenuItem(
+                      icon: Icons.receipt_long_rounded,
+                      title: 'Transactions',
+                      subtitle: 'Audit trail of payments & settlements',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TransactionsScreen(),
                           ),
                         );
                       },
@@ -599,21 +675,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
   }) {
     final content = Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 22.sp),
-          10.height,
+          Icon(icon, color: color, size: 20.sp),
+          6.height,
           Text(
             value,
+            textAlign: TextAlign.center,
             style: AppTextStyles.plusJakartaSans(
-              fontSize: 16.sp,
+              fontSize: 14.5.sp,
               fontWeight: FontWeight.w800,
               color: color,
             ),
@@ -621,8 +699,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           2.height,
           Text(
             label,
+            textAlign: TextAlign.center,
             style: AppTextStyles.plusJakartaSans(
-              fontSize: 11.5.sp,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),

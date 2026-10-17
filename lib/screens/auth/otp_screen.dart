@@ -7,7 +7,11 @@ import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/responsive.dart';
 import 'package:grahmitracus/providers/auth/send_otp_provider.dart';
 import 'package:grahmitracus/providers/auth/verify_otp_provider.dart';
+import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/providers/profile/profile_provider.dart';
+import 'package:grahmitracus/core/services/auth_storage_service.dart';
+import 'package:grahmitracus/providers/cart/order_provider.dart';
+import 'package:grahmitracus/providers/profile/wallet_provider.dart';
 import 'package:grahmitracus/screens/main_nav/main_navigation_screen.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -89,6 +93,7 @@ class _OtpScreenState extends State<OtpScreen> {
   bool get _isOtpComplete => _enteredOtp.length == 4;
 
   void _handleVerify() async {
+    if (_isLoading) return;
     if (!_isOtpComplete) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,11 +118,14 @@ class _OtpScreenState extends State<OtpScreen> {
       _isLoading = true;
     });
 
+    final locationProvider = context.read<LocationProvider>();
+
     await context.read<VerifyOtpProvider>().verifyOtp(
       phone: widget.phoneNumber,
       otp: _enteredOtp,
       reqId: _currentReqId,
       referralCode: widget.referralCode,
+      locationProvider: locationProvider,
       onSuccess: (response) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,7 +146,11 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
         );
 
+        final userId = AuthStorageService.extractUserId(response.accessToken ?? '');
+        context.read<LocationProvider>().initUserSession(userId);
+        context.read<OrderProvider>().initUserSession(userId);
         context.read<ProfileProvider>().fetchProfile();
+        context.read<WalletProvider>().fetchWallet();
 
         if (widget.onLoginSuccess != null) {
           widget.onLoginSuccess!(context);
@@ -152,10 +164,15 @@ class _OtpScreenState extends State<OtpScreen> {
       },
       onError: (errorMessage) {
         if (!mounted) return;
+        final displayMsg = (errorMessage.toLowerCase().contains('invalid') || errorMessage.toLowerCase().contains('expired'))
+            ? 'Invalid OTP. Please try again.'
+            : errorMessage;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              errorMessage,
+              displayMsg,
               style: AppTextStyles.plusJakartaSans(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
@@ -361,6 +378,25 @@ class _OtpScreenState extends State<OtpScreen> {
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
+          if (value.length > 1) {
+            // Handle paste / autofill of multiple digits
+            final digits = value.replaceAll(RegExp(r'\D'), '');
+            for (int i = 0; i < digits.length && (index + i) < 4; i++) {
+              _otpControllers[index + i].text = digits[i];
+            }
+            final nextFocus = (index + digits.length).clamp(0, 3);
+            if (nextFocus < 3) {
+              _focusNodes[nextFocus].requestFocus();
+            } else {
+              _focusNodes[3].unfocus();
+            }
+            setState(() {});
+            if (_isOtpComplete && !_isLoading) {
+              _handleVerify();
+            }
+            return;
+          }
+
           if (value.isNotEmpty) {
             HapticFeedback.selectionClick();
             if (index < 3) {
@@ -374,6 +410,10 @@ class _OtpScreenState extends State<OtpScreen> {
             }
           }
           setState(() {});
+
+          if (_isOtpComplete && !_isLoading) {
+            _handleVerify();
+          }
         },
       ),
     );

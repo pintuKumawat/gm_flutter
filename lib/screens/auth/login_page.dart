@@ -7,14 +7,12 @@ import 'package:grahmitracus/providers/auth/send_otp_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:grahmitracus/screens/auth/register_page.dart';
 import 'package:grahmitracus/screens/auth/otp_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(BuildContext context)? onLoginSuccess;
 
-  const LoginPage({
-    super.key,
-    this.onLoginSuccess,
-  });
+  const LoginPage({super.key, this.onLoginSuccess});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -104,7 +102,9 @@ class _LoginPageState extends State<LoginPage> {
             builder: (context) => OtpScreen(
               phoneNumber: phone,
               reqId: response.reqId,
-              referralCode: _referralController.text.trim().isNotEmpty ? _referralController.text.trim() : null,
+              referralCode: _referralController.text.trim().isNotEmpty
+                  ? _referralController.text.trim()
+                  : null,
               onLoginSuccess: widget.onLoginSuccess,
             ),
           ),
@@ -144,9 +144,7 @@ class _LoginPageState extends State<LoginPage> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8.w),
@@ -221,7 +219,9 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _isPhoneFocused ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          color: _isPhoneFocused
+              ? AppColors.brandPurple
+              : const Color(0xFFE2E8F0),
           width: 1.5,
         ),
       ),
@@ -229,10 +229,7 @@ class _LoginPageState extends State<LoginPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '🇮🇳',
-            style: TextStyle(fontSize: 22.sp),
-          ),
+          Text('🇮🇳', style: TextStyle(fontSize: 22.sp)),
           12.width,
           Text(
             '+91',
@@ -320,7 +317,9 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _isReferralFocused ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          color: _isReferralFocused
+              ? AppColors.brandPurple
+              : const Color(0xFFE2E8F0),
           width: 1.5,
         ),
       ),
@@ -328,7 +327,11 @@ class _LoginPageState extends State<LoginPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.card_giftcard_rounded, color: const Color(0xFF94A3B8), size: 20.sp),
+          Icon(
+            Icons.card_giftcard_rounded,
+            color: const Color(0xFF94A3B8),
+            size: 20.sp,
+          ),
           12.width,
           Expanded(
             child: TextField(
@@ -358,7 +361,11 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           if (_referralController.text.isEmpty)
-            Icon(Icons.add_circle_outline, color: const Color(0xFF94A3B8), size: 20.sp),
+            Icon(
+              Icons.add_circle_outline,
+              color: const Color(0xFF94A3B8),
+              size: 20.sp,
+            ),
         ],
       ),
     );
@@ -389,9 +396,8 @@ class _LoginPageState extends State<LoginPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RegisterPage(
-                        onLoginSuccess: widget.onLoginSuccess,
-                      ),
+                      builder: (context) =>
+                          RegisterPage(onLoginSuccess: widget.onLoginSuccess),
                     ),
                   );
                 },
@@ -421,6 +427,8 @@ class _LoginPageState extends State<LoginPage> {
                 fontWeight: FontWeight.w700,
                 color: AppColors.brandPurple,
               ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => _openPrivacyPolicy(context),
             ),
             const TextSpan(text: ' & '),
             TextSpan(
@@ -430,11 +438,33 @@ class _LoginPageState extends State<LoginPage> {
                 fontWeight: FontWeight.w700,
                 color: AppColors.brandPurple,
               ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => _openPrivacyPolicy(context),
             ),
             const TextSpan(text: '.'),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    HapticFeedback.selectionClick();
+    try {
+      final Uri url = Uri.parse('https://grahmitra.com/privacy-policy');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open Privacy Policy. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 }

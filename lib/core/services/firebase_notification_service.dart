@@ -186,4 +186,16 @@ class FirebaseNotificationService {
       print('--> syncToken() aborted: User is not authenticated (No active session token).');
     }
   }
+
+  /// Deletes the local FCM registration token upon logout.
+  static Future<void> deleteToken() async {
+    try {
+      await _messaging.deleteToken();
+      _fcmToken = null;
+      print('--> SUCCESS: FCM token successfully cleared/deleted.');
+    } catch (e) {
+      print('--> ERROR: Failed to delete FCM token: $e');
+    }
+  }
 }
+

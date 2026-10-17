@@ -122,11 +122,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   }) {
     HapticFeedback.selectionClick();
     final cart = context.read<CartProvider>();
-    final current = cart.getQuantity(id);
+    final effectiveProductId = productId ?? id;
+    final current = cart.getProductQuantity(
+      effectiveProductId,
+      variationId: variationId,
+    );
+    final key = CartProvider.buildCartKey(
+      effectiveProductId,
+      variationId: variationId,
+    );
 
     // qty here is the target quantity (same as CategoryProductsScreen passes it)
     cart.updateQuantity(
-      id,
+      key,
       qty,
       title: name,
       sellPrice: sellPrice,
@@ -135,13 +143,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       weight: weight,
       category: category,
       storeName: storeName,
-      productId: productId,
+      productId: effectiveProductId,
       variationId: variationId,
     );
 
     // Show popup only when item is first added (same behaviour as Home)
-    final delta = qty - current;
-    if (delta > 0 && qty == 1) {
+    if (current == 0 && qty > 0) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -404,8 +411,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 itemCount: _products.length,
                 itemBuilder: (context, index) {
                   final product = _products[index];
-                  final id = product.id.toString();
-                  final quantity = cart.getQuantity(id);
+                  final quantity = cart.getProductQuantity(
+                    product.id.toString(),
+                    variationId: product.variationId?.toString(),
+                  );
 
                   return ProductCard(
                     product: product,
@@ -424,9 +433,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     },
                     onQuantityChanged: (qty) {
                       _updateCart(
-                        id,
+                        product.id.toString(),
                         qty,
-                        product.title ?? '',
+                        product.title,
                         sellPrice: product.sellPrice,
                         mrpPrice: product.mrpPrice,
                         imgPath: product.imgPath,

@@ -62,6 +62,29 @@ class LocationRepo {
     }
   }
 
+  /// Resolves GPS latitude and longitude against `/api/master/resolve-location?lat={lat}&lng={lng}`
+  Future<Map<String, dynamic>?> resolveLocationByCoordinates({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _apiService.get(
+        ApiEndpoints.resolveLocation,
+        queryParameters: {
+          'lat': latitude,
+          'lng': longitude,
+        },
+      );
+
+      if (response.data is Map<String, dynamic>) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Fetches user's saved addresses from `/api/customer/address`
   Future<List<UserAddressModel>> getSavedAddresses() async {
     try {

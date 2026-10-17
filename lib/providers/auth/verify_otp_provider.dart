@@ -4,6 +4,7 @@ import 'package:grahmitracus/core/services/api_service.dart';
 import 'package:grahmitracus/core/services/auth_storage_service.dart';
 import 'package:grahmitracus/core/services/firebase_notification_service.dart';
 import 'package:grahmitracus/models/auth/verify_otp_model.dart';
+import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/repositories/auth/verify_otp_repo.dart';
 
 /// Provider for managing OTP verification and customer login state.
@@ -11,7 +12,7 @@ class VerifyOtpProvider extends ChangeNotifier {
   final VerifyOtpRepo _verifyOtpRepo;
 
   VerifyOtpProvider({VerifyOtpRepo? verifyOtpRepo})
-      : _verifyOtpRepo = verifyOtpRepo ?? VerifyOtpRepo();
+    : _verifyOtpRepo = verifyOtpRepo ?? VerifyOtpRepo();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -33,6 +34,7 @@ class VerifyOtpProvider extends ChangeNotifier {
     required String otp,
     String? reqId,
     String? referralCode,
+    LocationProvider? locationProvider,
     void Function(VerifyOtpResponse response)? onSuccess,
     void Function(String errorMessage)? onError,
   }) async {
@@ -54,12 +56,22 @@ class VerifyOtpProvider extends ChangeNotifier {
       if (res.success) {
         // Persist tokens and configure ApiService
         if (res.accessToken != null && res.accessToken!.isNotEmpty) {
+          final userId = AuthStorageService.extractUserId(res.accessToken!);
           await AuthStorageService.saveTokens(
             accessToken: res.accessToken!,
             refreshToken: res.refreshToken ?? '',
+            userId: userId,
+            userPhone: phone,
           );
           ApiService.instance.setAuthToken(res.accessToken!);
-          
+
+          // Sync saved addresses and selected location for the authenticated user
+          if (locationProvider != null) {
+            try {
+              await locationProvider.initUserSession(userId);
+            } catch (_) {}
+          }
+
           // Sync FCM token with backend now that user is authenticated
           print('====== LOGIN FCM SYNC START ======');
           print('Attempting to sync FCM token after successful login...');

@@ -7,7 +7,11 @@ import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/responsive.dart';
 import 'package:grahmitracus/models/auth/register_model.dart';
 import 'package:grahmitracus/providers/auth/register_provider.dart';
+import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/providers/profile/profile_provider.dart';
+import 'package:grahmitracus/core/services/auth_storage_service.dart';
+import 'package:grahmitracus/providers/cart/order_provider.dart';
+import 'package:grahmitracus/providers/profile/wallet_provider.dart';
 import 'package:grahmitracus/screens/main_nav/main_navigation_screen.dart';
 
 class RegisterOtpScreen extends StatefulWidget {
@@ -87,6 +91,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   bool get _isOtpComplete => _enteredOtp.length == 4;
 
   void _handleVerify() async {
+    if (_isLoading) return;
     if (!_isOtpComplete) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,9 +138,12 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       referralCode: widget.registerData.referralCode,
     );
 
+    final locationProvider = context.read<LocationProvider>();
+
     await context.read<RegisterProvider>().registerVerify(
       request: request,
       reqId: _currentReqId,
+      locationProvider: locationProvider,
       onSuccess: (response) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +176,11 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           ),
         );
 
+        final userId = AuthStorageService.extractUserId(response.accessToken ?? '');
+        context.read<LocationProvider>().initUserSession(userId);
+        context.read<OrderProvider>().initUserSession(userId);
         context.read<ProfileProvider>().fetchProfile();
+        context.read<WalletProvider>().fetchWallet();
 
         if (widget.onLoginSuccess != null) {
           widget.onLoginSuccess!(context);
@@ -182,6 +194,11 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       },
       onError: (errorMessage) {
         if (!mounted) return;
+        final displayMsg = (errorMessage.toLowerCase().contains('invalid') || errorMessage.toLowerCase().contains('expired'))
+            ? 'Invalid OTP. Please try again.'
+            : errorMessage;
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -190,7 +207,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                 10.width,
                 Expanded(
                   child: Text(
-                    errorMessage,
+                    displayMsg,
                     style: AppTextStyles.plusJakartaSans(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
@@ -437,13 +454,30 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
+          if (value.length > 1) {
+            final digits = value.replaceAll(RegExp(r'\D'), '');
+            for (int i = 0; i < digits.length && (index + i) < 4; i++) {
+              _otpControllers[index + i].text = digits[i];
+            }
+            final nextFocus = (index + digits.length).clamp(0, 3);
+            if (nextFocus < 3) {
+              _focusNodes[nextFocus].requestFocus();
+            } else {
+              _focusNodes[3].unfocus();
+            }
+            setState(() {});
+            if (_isOtpComplete && !_isLoading) {
+              _handleVerify();
+            }
+            return;
+          }
+
           if (value.isNotEmpty) {
             HapticFeedback.selectionClick();
             if (index < 3) {
               _focusNodes[index + 1].requestFocus();
             } else {
               _focusNodes[index].unfocus();
-              _handleVerify();
             }
           } else {
             if (index > 0) {
@@ -451,6 +485,10 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
             }
           }
           setState(() {});
+
+          if (_isOtpComplete && !_isLoading) {
+            _handleVerify();
+          }
         },
       ),
     );

@@ -1,11 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/size__extensions.dart';
 
 class CustomerSupportScreen extends StatelessWidget {
   const CustomerSupportScreen({super.key});
+
+  Future<void> _launchWhatsApp(BuildContext context) async {
+    final Uri url = Uri.parse('https://wa.me/919205632539');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open WhatsApp. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +124,12 @@ class CustomerSupportScreen extends StatelessWidget {
                 subtitle: 'Send us your query',
                 onTap: () {},
               ),
+              _buildSupportOption(
+                icon: FontAwesomeIcons.whatsapp,
+                title: 'WhatsApp Support',
+                subtitle: 'Chat with us on WhatsApp',
+                onTap: () => _launchWhatsApp(context),
+              ),
               
               32.height,
               
@@ -115,7 +142,7 @@ class CustomerSupportScreen extends StatelessWidget {
   }
 
   Widget _buildSupportOption({
-    required IconData icon,
+    required dynamic icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -143,11 +170,17 @@ class CustomerSupportScreen extends StatelessWidget {
                   color: AppColors.brandPurple.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.brandPurple,
-                  size: 20.sp,
-                ),
+                child: icon is IconData
+                    ? Icon(
+                        icon,
+                        color: AppColors.brandPurple,
+                        size: 20.sp,
+                      )
+                    : FaIcon(
+                        icon as FaIconData,
+                        color: AppColors.brandPurple,
+                        size: 20.sp,
+                      ),
               ),
               16.width,
               Expanded(

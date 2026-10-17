@@ -80,7 +80,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Could not auto-detect location. Please select an area below.',
+              prov.errorMessage ??
+                  'Could not auto-detect location. Please select an area below.',
               style: AppTextStyles.plusJakartaSans(
                 fontSize: 12.sp,
                 color: Colors.white,
@@ -773,7 +774,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       titleSpacing: 0,
       title: Text(
-        locationProv.currentLocation.displayString,
+        locationProv.hasSelectedLocation &&
+                locationProv.currentLocation.displayString.trim().isNotEmpty
+            ? locationProv.currentLocation.displayString
+            : 'Select Location',
         style: AppTextStyles.plusJakartaSans(
           fontSize: 14.5.sp,
           fontWeight: FontWeight.w800,

@@ -195,4 +195,31 @@ class OrderModel {
       createdAt: parsedDate,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': rawId,
+      'order_code': orderCode,
+      'order_date': createdAt.toIso8601String(),
+      'order_status': rawStatus,
+      'total': total,
+      'items_count': itemCount,
+      'shipping_details': {
+        'street_address': deliveryAddress,
+      },
+      'payment_method': paymentMethod,
+      'products': orderedItems
+          .map((i) => {
+                'variation_id': i.variationId,
+                'product_id': i.productId,
+                'product_name': i.title,
+                'price': i.sellPrice,
+                'product_image': i.imageUrl,
+                'quantity': i.quantity,
+                'variation_name': i.weight,
+              })
+          .toList(),
+    };
+  }
 }
+

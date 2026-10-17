@@ -22,10 +22,12 @@ import 'package:grahmitracus/core/services/api_service.dart';
 import 'package:grahmitracus/core/services/auth_storage_service.dart';
 import 'package:grahmitracus/providers/cart/order_provider.dart';
 import 'package:grahmitracus/providers/payment/payment_provider.dart';
+import 'package:grahmitracus/providers/product/vendor_provider.dart';
 
 import 'package:grahmitracus/providers/profile/profile_provider.dart';
 import 'package:grahmitracus/providers/profile/wallet_provider.dart';
 import 'package:grahmitracus/providers/profile/referral_provider.dart';
+import 'package:grahmitracus/providers/transaction/transaction_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:grahmitracus/core/services/firebase_notification_service.dart';
 
@@ -45,8 +47,10 @@ void main() async {
 
   // Initialize stored access token if available
   final token = await AuthStorageService.getAccessToken();
+  int? initialUserId;
   if (token != null && token.isNotEmpty) {
     ApiService.instance.setAuthToken(token);
+    initialUserId = await AuthStorageService.getUserId() ?? AuthStorageService.extractUserId(token);
   }
 
   runApp(  
@@ -67,17 +71,32 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => WalletProvider()..fetchWallet()),
         ChangeNotifierProvider(create: (_) => ReferralProvider()),
-        ChangeNotifierProvider(create: (_) => LocationProvider()..init()),
-        ChangeNotifierProvider(create: (_) => CategoryGroupProvider()..fetchGroups()),
-        ChangeNotifierProvider(create: (_) => CategoryProvider()..fetchCategories()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()..init(initialUserId: initialUserId)),
+        ChangeNotifierProvider(
+          create: (_) => CategoryGroupProvider()..fetchGroups(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CategoryProvider()..fetchCategories(),
+        ),
         ChangeNotifierProvider(create: (_) => TrendingProductProvider()),
         ChangeNotifierProvider(create: (_) => HomeGroupProductsProvider()),
-        ChangeNotifierProvider(create: (_) => SpotlightBannerProvider()..fetchBanners(displayLocation: 'home')),
+        ChangeNotifierProvider(
+          create: (_) =>
+              SpotlightBannerProvider()..fetchBanners(displayLocation: 'home'),
+        ),
+        ChangeNotifierProvider(create: (_) => VendorProvider()..fetchVendors()),
         ChangeNotifierProvider(create: (_) => ProductDetailProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) {
+          final orderProvider = OrderProvider();
+          if (initialUserId != null) {
+            orderProvider.initUserSession(initialUserId);
+          }
+          return orderProvider;
+        }),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
       ],
       child: const MyApp(),
     ),
@@ -104,8 +123,8 @@ class MyApp extends StatelessWidget {
               surface: AppColors.background,
             ),
             textTheme: Typography.material2021().black.apply(
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
+              fontFamily: 'Plus Jakarta Sans',
+            ),
             useMaterial3: true,
           ),
           home: child,

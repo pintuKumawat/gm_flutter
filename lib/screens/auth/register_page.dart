@@ -12,10 +12,7 @@ import 'package:grahmitracus/screens/auth/register_otp_screen.dart';
 class RegisterPage extends StatefulWidget {
   final void Function(BuildContext context)? onLoginSuccess;
 
-  const RegisterPage({
-    super.key,
-    this.onLoginSuccess,
-  });
+  const RegisterPage({super.key, this.onLoginSuccess});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -48,7 +45,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _phoneFocusNode,
       _emailFocusNode,
       _passwordFocusNode,
-      _referralFocusNode
+      _referralFocusNode,
     ];
     for (var node in focusNodes) {
       node.addListener(() {
@@ -78,7 +75,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool get _isPhoneValid => _phoneController.text.trim().length == 10;
   bool get _isEmailValid {
     final email = _emailController.text.trim();
-    return email.isNotEmpty && RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+    return email.isNotEmpty &&
+        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   void _showErrorToast(String message) {
@@ -230,9 +228,7 @@ class _RegisterPageState extends State<RegisterPage> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8.w),
@@ -350,7 +346,9 @@ class _RegisterPageState extends State<RegisterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _phoneFocusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          color: _phoneFocusNode.hasFocus
+              ? AppColors.brandPurple
+              : const Color(0xFFE2E8F0),
           width: 1.5,
         ),
       ),
@@ -374,11 +372,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ],
           ),
           8.width,
-          Container(
-            width: 1.2.w,
-            height: 22.h,
-            color: AppColors.borderSubtle,
-          ),
+          Container(width: 1.2.w, height: 22.h, color: AppColors.borderSubtle),
           12.width,
           Expanded(
             child: TextField(
@@ -449,7 +443,9 @@ class _RegisterPageState extends State<RegisterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: focusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          color: focusNode.hasFocus
+              ? AppColors.brandPurple
+              : const Color(0xFFE2E8F0),
           width: 1.5,
         ),
       ),
@@ -495,14 +491,20 @@ class _RegisterPageState extends State<RegisterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: _passwordFocusNode.hasFocus ? AppColors.brandPurple : const Color(0xFFE2E8F0),
+          color: _passwordFocusNode.hasFocus
+              ? AppColors.brandPurple
+              : const Color(0xFFE2E8F0),
           width: 1.5,
         ),
       ),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 0.h),
       child: Row(
         children: [
-          Icon(Icons.lock_outline_rounded, color: AppColors.iconSubtle, size: 20.sp),
+          Icon(
+            Icons.lock_outline_rounded,
+            color: AppColors.iconSubtle,
+            size: 20.sp,
+          ),
           10.width,
           Expanded(
             child: TextField(

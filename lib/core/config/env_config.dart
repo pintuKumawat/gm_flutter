@@ -23,23 +23,28 @@ class EnvConfig {
     }
   }
 
+  static String? _getEnv(String key) {
+    if (!dotenv.isInitialized) return null;
+    return dotenv.maybeGet(key);
+  }
+
   /// Base URL of the backend server.
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return dotenv.maybeGet('BASE_URL') ?? _defaultBaseUrl;
+    return _getEnv('BASE_URL') ?? _defaultBaseUrl;
   }
 
   /// Request timeout in milliseconds.
   static Duration get connectTimeout {
-    final timeoutStr = dotenv.maybeGet('API_TIMEOUT');
+    final timeoutStr = _getEnv('API_TIMEOUT');
     final timeoutMs = int.tryParse(timeoutStr ?? '') ?? _defaultTimeout;
     return Duration(milliseconds: timeoutMs);
   }
 
   /// Receive timeout in milliseconds.
   static Duration get receiveTimeout {
-    final timeoutStr = dotenv.maybeGet('API_TIMEOUT');
+    final timeoutStr = _getEnv('API_TIMEOUT');
     final timeoutMs = int.tryParse(timeoutStr ?? '') ?? _defaultTimeout;
     return Duration(milliseconds: timeoutMs);
   }
@@ -54,7 +59,7 @@ class EnvConfig {
   static String get msg91AuthKey {
     const fromEnv = String.fromEnvironment('MSG91_AUTH_KEY');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return dotenv.maybeGet('MSG91_AUTH_KEY') ?? '';
+    return _getEnv('MSG91_AUTH_KEY') ?? '';
   }
 
   /// MSG91 Template ID

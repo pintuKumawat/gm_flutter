@@ -69,8 +69,12 @@ class ProductVariationBottomSheet extends StatelessWidget {
         // No variations at all — add to cart directly
         print('[PVBS] No variations, adding to cart directly');
         final cart = context.read<CartProvider>();
+        final key = CartProvider.buildCartKey(
+          detail.id.toString(),
+          variationId: detail.variationId?.toString(),
+        );
         cart.addToCart(
-          id: detail.id.toString(),
+          id: key,
           title: detail.title,
           sellPrice: detail.sellPrice,
           mrpPrice: detail.mrpPrice,
@@ -278,10 +282,15 @@ class ProductVariationBottomSheet extends StatelessWidget {
   Widget _buildVariationRow(
       BuildContext context, ProductVariationModel variation, bool isLast) {
     final cart = context.watch<CartProvider>();
-    final cartItemId = product.id.toString();
-    final quantity = cart.getQuantity(cartItemId);
-    final inCartVariationId = cart.items[cartItemId]?.variationId;
-    final isThisVariationInCart = inCartVariationId == variation.id.toString();
+    final key = CartProvider.buildCartKey(
+      product.id.toString(),
+      variationId: variation.id.toString(),
+    );
+    final quantity = cart.getProductQuantity(
+      product.id.toString(),
+      variationId: variation.id.toString(),
+    );
+    final bool isInCart = quantity > 0;
 
     final sellPrice = variation.sellPrice;
     final mrpPrice = variation.mrpPrice;
@@ -355,12 +364,12 @@ class ProductVariationBottomSheet extends StatelessWidget {
               ),
 
               // ADD button or quantity stepper
-              if (quantity <= 0 || !isThisVariationInCart)
+              if (!isInCart)
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
                     cart.addToCart(
-                      id: cartItemId,
+                      id: key,
                       title: product.title,
                       sellPrice: sellPrice,
                       mrpPrice: mrpPrice,
@@ -405,7 +414,19 @@ class ProductVariationBottomSheet extends StatelessWidget {
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          cart.updateQuantity(cartItemId, quantity - 1);
+                          cart.updateQuantity(
+                            key,
+                            quantity - 1,
+                            title: product.title,
+                            sellPrice: sellPrice,
+                            mrpPrice: mrpPrice,
+                            imageUrl: product.heroImageUrl,
+                            weight: variation.name,
+                            category: product.category,
+                            storeName: product.storeName,
+                            productId: product.id.toString(),
+                            variationId: variation.id.toString(),
+                          );
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -425,7 +446,19 @@ class ProductVariationBottomSheet extends StatelessWidget {
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          cart.updateQuantity(cartItemId, quantity + 1);
+                          cart.updateQuantity(
+                            key,
+                            quantity + 1,
+                            title: product.title,
+                            sellPrice: sellPrice,
+                            mrpPrice: mrpPrice,
+                            imageUrl: product.heroImageUrl,
+                            weight: variation.name,
+                            category: product.category,
+                            storeName: product.storeName,
+                            productId: product.id.toString(),
+                            variationId: variation.id.toString(),
+                          );
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(

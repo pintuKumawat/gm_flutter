@@ -273,11 +273,13 @@ class _SearchScreenState extends State<SearchScreen>
   void _updateQuantity(HomeProductModel product, int delta) {
     HapticFeedback.selectionClick();
     final cart = context.read<CartProvider>();
-    final id = product.id.toString();
-    final current = cart.getQuantity(id);
+    final pId = product.id.toString();
+    final vId = product.variationId?.toString();
+    final key = CartProvider.buildCartKey(pId, variationId: vId);
+    final current = cart.getProductQuantity(pId, variationId: vId);
     final updated = (current + delta).clamp(0, 99);
     cart.updateQuantity(
-      id,
+      key,
       updated,
       title: product.title,
       sellPrice: product.sellPrice,
@@ -378,7 +380,10 @@ class _SearchScreenState extends State<SearchScreen>
   /// Top App Bar with back button, location pill, and action icons
   PreferredSizeWidget _buildAppBar() {
     final locationProv = context.watch<LocationProvider>();
-    final displayLocation = locationProv.currentLocation.displayString;
+    final displayLocation = locationProv.hasSelectedLocation &&
+            locationProv.currentLocation.displayString.trim().isNotEmpty
+        ? locationProv.currentLocation.displayString.trim()
+        : 'Select Location...';
 
     return AppBar(
       backgroundColor: Colors.white,
@@ -1014,8 +1019,10 @@ class _SearchScreenState extends State<SearchScreen>
 
   /// Product search result row matching Next.js MobileSearch.js seller & product row
   Widget _buildProductSearchRow(HomeProductModel product) {
-    final qty =
-        context.watch<CartProvider>().getQuantity(product.id.toString());
+    final qty = context.watch<CartProvider>().getProductQuantity(
+          product.id.toString(),
+          variationId: product.variationId?.toString(),
+        );
     final isOutOfStock = product.stockQuantity == 0;
 
     return Container(

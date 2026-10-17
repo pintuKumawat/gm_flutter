@@ -57,15 +57,153 @@ class CartProvider with ChangeNotifier {
   double get apiCodConvenienceFee => _apiCodConvenienceFee;
   bool get apiIsCodEnabled => _apiIsCodEnabled;
 
+  /// Canonical cart key generator for consistent referencing across all screens
+  static String buildCartKey(String productId, {String? variationId}) {
+    final cleanPid = productId.trim();
+    final cleanVid = variationId?.trim();
+    if (cleanVid != null &&
+        cleanVid.isNotEmpty &&
+        cleanVid != 'default' &&
+        cleanVid != '0' &&
+        cleanVid != 'null') {
+      return '${cleanPid}_$cleanVid';
+    }
+    return cleanPid;
+  }
+
+  /// Resolves the existing cart key in _items matching a given key, productId, or variationId
+  String? findCartKey({String? id, String? productId, String? variationId}) {
+    final cleanPid = (productId ?? (id != null && id.contains('_') ? id.split('_').first : id))?.trim();
+    final cleanVid = (variationId ?? (id != null && id.contains('_') ? id.split('_').last : null))?.trim();
+
+    final hasSpecificVid = cleanVid != null &&
+        cleanVid.isNotEmpty &&
+        cleanVid != 'default' &&
+        cleanVid != '0' &&
+        cleanVid != 'null';
+
+    // 1. If variationId is specific, ONLY match exact variation
+    if (hasSpecificVid) {
+      final canonicalKey = (cleanPid != null && cleanPid.isNotEmpty)
+          ? '${cleanPid}_$cleanVid'
+          : null;
+      if (canonicalKey != null && _items.containsKey(canonicalKey)) {
+        return canonicalKey;
+      }
+      if (id != null && _items.containsKey(id)) {
+        final item = _items[id]!;
+        final itemVid = item.variationId ?? (id.contains('_') ? id.split('_').last : null);
+        if (itemVid == cleanVid) {
+          return id;
+        }
+      }
+      for (final entry in _items.entries) {
+        final itemPid = entry.value.productId ?? entry.key.split('_').first;
+        final itemVid = entry.value.variationId ?? (entry.key.contains('_') ? entry.key.split('_').last : null);
+        if (cleanPid != null && cleanPid.isNotEmpty) {
+          if (itemPid == cleanPid && itemVid == cleanVid) {
+            return entry.key;
+          }
+        } else if (itemVid == cleanVid) {
+          return entry.key;
+        }
+      }
+      // Critical: If a specific variation was requested and not found, NEVER fall back to another variant or base product!
+      return null;
+    }
+
+    // 2. No specific variation requested:
+    // Direct key match in _items
+    if (id != null && _items.containsKey(id)) {
+      return id;
+    }
+
+    if (cleanPid == null || cleanPid.isEmpty) return null;
+
+    // Direct base productId in _items
+    if (_items.containsKey(cleanPid)) {
+      return cleanPid;
+    }
+
+    // Fallback: Check if there's any item belonging to this productId
+    for (final entry in _items.entries) {
+      final itemPid = entry.value.productId ?? entry.key.split('_').first;
+      if (itemPid == cleanPid) {
+        return entry.key;
+      }
+    }
+
+    return null;
+  }
+
   /// Total units count across all cart items (for badge count)
   int get totalQuantity =>
       _items.values.fold(0, (sum, item) => sum + item.quantity);
 
-  /// Get specific product quantity
-  int getQuantity(String id) => _items[id]?.quantity ?? 0;
+  /// Get specific product quantity by cart key or resolved key
+  int getQuantity(String id) {
+    if (_items.containsKey(id)) {
+      return _items[id]!.quantity;
+    }
+    final resolvedKey = findCartKey(id: id);
+    if (resolvedKey != null && _items.containsKey(resolvedKey)) {
+      return _items[resolvedKey]!.quantity;
+    }
+    return 0;
+  }
+
+  /// Get product quantity with optional variation matching.
+  /// If variationId is provided, returns that variation's quantity.
+  /// If variationId is null or not in cart, returns the total quantity of this product in cart.
+  int getProductQuantity(String productId, {String? variationId}) {
+    final cleanPid = productId.trim();
+    if (cleanPid.isEmpty) return 0;
+
+    final cleanVid = variationId?.trim();
+    final hasSpecificVid = cleanVid != null &&
+        cleanVid.isNotEmpty &&
+        cleanVid != 'default' &&
+        cleanVid != '0' &&
+        cleanVid != 'null';
+
+    // 1. If specific variation, match exact variation ONLY
+    if (hasSpecificVid) {
+      final canonicalKey = '${cleanPid}_$cleanVid';
+      if (_items.containsKey(canonicalKey)) {
+        return _items[canonicalKey]!.quantity;
+      }
+      for (final item in _items.values) {
+        final itemPid = item.productId ?? item.id.split('_').first;
+        final itemVid = item.variationId ?? (item.id.contains('_') ? item.id.split('_').last : null);
+        if (itemPid == cleanPid && itemVid == cleanVid) {
+          return item.quantity;
+        }
+      }
+      // Critical: If specific variation was requested and not found, its quantity is 0!
+      return 0;
+    }
+
+    // 2. Direct match with productId key
+    if (_items.containsKey(cleanPid)) {
+      return _items[cleanPid]!.quantity;
+    }
+
+    // 3. Fallback: Sum quantities of all variations for this product (only when no specific variation requested)
+    int total = 0;
+    for (final item in _items.values) {
+      final itemPid = item.productId ?? item.id.split('_').first;
+      if (itemPid == cleanPid) {
+        total += item.quantity;
+      }
+    }
+    return total;
+  }
 
   /// Check if product is in cart
-  bool contains(String id) => _items.containsKey(id);
+  bool contains(String id) {
+    if (_items.containsKey(id)) return true;
+    return findCartKey(id: id) != null;
+  }
 
   /// Total Selling Price
   double get subtotal =>
@@ -134,14 +272,29 @@ class CartProvider with ChangeNotifier {
     String? variationId,
     int quantity = 1,
   }) {
-    if (_items.containsKey(id)) {
-      final existing = _items[id]!;
-      _items[id] = existing.copyWith(
+    final effectiveProductId = productId ?? (id.contains('_') ? id.split('_').first : id);
+    final effectiveVariationId = variationId ?? (id.contains('_') ? id.split('_').last : null);
+
+    final existingKey = findCartKey(
+      id: id,
+      productId: effectiveProductId,
+      variationId: effectiveVariationId,
+    );
+    final targetKey = existingKey ?? buildCartKey(effectiveProductId, variationId: effectiveVariationId);
+
+    if (existingKey != null && _items.containsKey(existingKey)) {
+      final existing = _items[existingKey]!;
+      _items[existingKey] = existing.copyWith(
+        quantity: existing.quantity + quantity,
+      );
+    } else if (_items.containsKey(targetKey)) {
+      final existing = _items[targetKey]!;
+      _items[targetKey] = existing.copyWith(
         quantity: existing.quantity + quantity,
       );
     } else {
-      _items[id] = CartItem(
-        id: id,
+      _items[targetKey] = CartItem(
+        id: targetKey,
         title: title,
         imageUrl: imageUrl,
         sellPrice: sellPrice,
@@ -149,8 +302,8 @@ class CartProvider with ChangeNotifier {
         quantity: quantity,
         weight: weight,
         category: category,
-        productId: productId,
-        variationId: variationId,
+        productId: effectiveProductId,
+        variationId: effectiveVariationId,
         storeName: storeName,
       );
     }
@@ -173,13 +326,29 @@ class CartProvider with ChangeNotifier {
     String? productId,
     String? variationId,
   }) {
+    final effectiveProductId = productId ?? (id.contains('_') ? id.split('_').first : id);
+    final effectiveVariationId = variationId ?? (id.contains('_') ? id.split('_').last : null);
+
+    final existingKey = findCartKey(
+      id: id,
+      productId: effectiveProductId,
+      variationId: effectiveVariationId,
+    );
+    final targetKey = existingKey ?? buildCartKey(effectiveProductId, variationId: effectiveVariationId);
+
     if (quantity <= 0) {
+      _items.remove(targetKey);
+      if (existingKey != null && existingKey != targetKey) {
+        _items.remove(existingKey);
+      }
       _items.remove(id);
-    } else if (_items.containsKey(id)) {
-      _items[id] = _items[id]!.copyWith(quantity: quantity);
+    } else if (existingKey != null && _items.containsKey(existingKey)) {
+      _items[existingKey] = _items[existingKey]!.copyWith(quantity: quantity);
+    } else if (_items.containsKey(targetKey)) {
+      _items[targetKey] = _items[targetKey]!.copyWith(quantity: quantity);
     } else if (title != null && sellPrice != null) {
-      _items[id] = CartItem(
-        id: id,
+      _items[targetKey] = CartItem(
+        id: targetKey,
         title: title,
         imageUrl: imageUrl,
         sellPrice: sellPrice,
@@ -188,8 +357,8 @@ class CartProvider with ChangeNotifier {
         weight: weight,
         category: category,
         storeName: storeName,
-        productId: productId ?? id,
-        variationId: variationId,
+        productId: effectiveProductId,
+        variationId: effectiveVariationId,
       );
     }
     _recalculateCoupon();
@@ -199,8 +368,9 @@ class CartProvider with ChangeNotifier {
 
   /// Increment item quantity by 1
   void increment(String id) {
-    if (_items.containsKey(id)) {
-      _items[id] = _items[id]!.copyWith(quantity: _items[id]!.quantity + 1);
+    final existingKey = findCartKey(id: id) ?? id;
+    if (_items.containsKey(existingKey)) {
+      _items[existingKey] = _items[existingKey]!.copyWith(quantity: _items[existingKey]!.quantity + 1);
       _recalculateCoupon();
       _saveCartToPrefs();
       notifyListeners();
@@ -209,12 +379,13 @@ class CartProvider with ChangeNotifier {
 
   /// Decrement item quantity by 1 (removes if reaches 0)
   void decrement(String id) {
-    if (_items.containsKey(id)) {
-      final current = _items[id]!.quantity;
+    final existingKey = findCartKey(id: id) ?? id;
+    if (_items.containsKey(existingKey)) {
+      final current = _items[existingKey]!.quantity;
       if (current <= 1) {
-        _items.remove(id);
+        _items.remove(existingKey);
       } else {
-        _items[id] = _items[id]!.copyWith(quantity: current - 1);
+        _items[existingKey] = _items[existingKey]!.copyWith(quantity: current - 1);
       }
       _recalculateCoupon();
       _saveCartToPrefs();
@@ -224,7 +395,12 @@ class CartProvider with ChangeNotifier {
 
   /// Remove item completely from cart
   void removeItem(String id) {
+    final existingKey = findCartKey(id: id) ?? id;
+    bool removed = _items.remove(existingKey) != null;
     if (_items.remove(id) != null) {
+      removed = true;
+    }
+    if (removed) {
       _recalculateCoupon();
       _saveCartToPrefs();
       notifyListeners();
@@ -282,8 +458,8 @@ class CartProvider with ChangeNotifier {
         "order_amount": subtotal,
         "cart_items": _items.values
             .map((item) => {
-                  "product_id": int.tryParse(item.id) ?? 0,
-                  "variation_id": int.tryParse(item.id) ?? 0,
+                  "product_id": int.tryParse(item.productId ?? item.id.split('_').first) ?? 0,
+                  "variation_id": int.tryParse(item.variationId ?? (item.id.contains('_') ? item.id.split('_').last : '')) ?? int.tryParse(item.productId ?? item.id) ?? 0,
                   "price": item.sellPrice,
                   "quantity": item.quantity,
                 })
@@ -371,7 +547,7 @@ class CartProvider with ChangeNotifier {
 
       final payload = {
         "items": _items.values.map((item) => {
-          "variation_id": int.tryParse(item.variationId ?? '') ?? int.tryParse(item.id.split('_').first) ?? 0,
+          "variation_id": int.tryParse(item.variationId ?? '') ?? int.tryParse(item.id.split('_').last) ?? int.tryParse(item.id.split('_').first) ?? 0,
           "offer_id": null,
           "vendor_id": null
         }).toList(),
@@ -389,13 +565,14 @@ class CartProvider with ChangeNotifier {
       if (response['success'] == true && response['items'] != null) {
         final updatedItems = response['items'] as List;
         for (var apiItem in updatedItems) {
-          final String id = apiItem['variation_id'].toString();
-          if (_items.containsKey(id)) {
-            final double newPrice = (apiItem['sell_price'] as num?)?.toDouble() ?? _items[id]!.sellPrice;
+          final String varId = apiItem['variation_id'].toString();
+          final matchingKey = findCartKey(id: varId, variationId: varId);
+          if (matchingKey != null && _items.containsKey(matchingKey)) {
+            final double newPrice = (apiItem['sell_price'] as num?)?.toDouble() ?? _items[matchingKey]!.sellPrice;
             
             // Note: The API returns deliverable and available boolean flags.
             // Keeping minimum changes to UI: we only update the authoritative price here.
-            _items[id] = _items[id]!.copyWith(sellPrice: newPrice);
+            _items[matchingKey] = _items[matchingKey]!.copyWith(sellPrice: newPrice);
           }
         }
         _recalculateCoupon();
@@ -429,8 +606,8 @@ class CartProvider with ChangeNotifier {
 
       final payload = {
         "items": _items.values.map((item) => {
-          "product_id": int.tryParse(item.productId ?? '') ?? int.tryParse(item.id) ?? 0,
-          "variation_id": int.tryParse(item.variationId ?? ''),
+          "product_id": int.tryParse(item.productId ?? '') ?? int.tryParse(item.id.split('_').first) ?? 0,
+          "variation_id": int.tryParse(item.variationId ?? (item.id.contains('_') ? item.id.split('_').last : '')),
           "quantity": item.quantity,
           "price": item.sellPrice
         }).toList(),
@@ -491,8 +668,9 @@ class CartProvider with ChangeNotifier {
       _items = {};
       for (var itemJson in decodedData) {
         final item = CartItem.fromJson(itemJson);
-        // Only load valid items with product and variation ID
-        if (item.productId != null && item.variationId != null && item.variationId != "null") {
+        // Load any valid cart item with quantity > 0 and valid id/productId
+        final pid = item.productId ?? item.id.split('_').first;
+        if (pid.isNotEmpty && item.quantity > 0) {
           _items[item.id] = item;
         }
       }

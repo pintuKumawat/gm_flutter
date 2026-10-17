@@ -4,6 +4,7 @@ import 'package:grahmitracus/core/services/api_service.dart';
 import 'package:grahmitracus/core/services/auth_storage_service.dart';
 import 'package:grahmitracus/core/services/firebase_notification_service.dart';
 import 'package:grahmitracus/models/auth/register_model.dart';
+import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/repositories/auth/register_repo.dart';
 
 /// Provider for managing customer registration states.
@@ -11,7 +12,7 @@ class RegisterProvider extends ChangeNotifier {
   final RegisterRepo _registerRepo;
 
   RegisterProvider({RegisterRepo? registerRepo})
-      : _registerRepo = registerRepo ?? RegisterRepo();
+    : _registerRepo = registerRepo ?? RegisterRepo();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -77,6 +78,7 @@ class RegisterProvider extends ChangeNotifier {
   Future<bool> registerVerify({
     required RegisterVerifyRequest request,
     String? reqId,
+    LocationProvider? locationProvider,
     void Function(RegisterVerifyResponse response)? onSuccess,
     void Function(String errorMessage)? onError,
   }) async {
@@ -86,18 +88,31 @@ class RegisterProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _registerRepo.registerVerify(request: request, reqId: reqId);
+      final res = await _registerRepo.registerVerify(
+        request: request,
+        reqId: reqId,
+      );
       _verifyResponse = res;
       _isSuccess = res.success;
 
       if (res.success) {
         // Persist tokens and configure ApiService
         if (res.accessToken != null && res.accessToken!.isNotEmpty) {
+          final userId = AuthStorageService.extractUserId(res.accessToken!);
           await AuthStorageService.saveTokens(
             accessToken: res.accessToken!,
             refreshToken: res.refreshToken ?? '',
+            userId: userId,
+            userPhone: request.phone,
           );
           ApiService.instance.setAuthToken(res.accessToken!);
+
+          // Sync saved addresses and selected location for the authenticated user
+          if (locationProvider != null) {
+            try {
+              await locationProvider.initUserSession(userId);
+            } catch (_) {}
+          }
 
           // Sync FCM token with backend now that user is authenticated
           await FirebaseNotificationService.syncToken();

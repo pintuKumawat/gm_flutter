@@ -7,7 +7,7 @@ class ApiEndpoints {
   static const String register = '/auth/register';
   static const String registerRequest = '/api/register-request';
   static const String registerVerify = '/api/register-verify';
-  static const String logout = '/auth/logout';
+  static const String logout = '/api/logout';
   static const String updateFcmToken = '/api/update-fcm-token';
   static const String refreshToken = '/api/refresh';
   static const String forgotPassword = '/auth/forgot-password';
@@ -34,6 +34,7 @@ class ApiEndpoints {
   static const String relatedProducts = '/api/products/related';
   static const String searchSuggest = '/api/search/suggest';
   static String productDetail(String idOrSlug) => '/api/products/$idOrSlug';
+  static String storeDetail(String slug) => '/api/store/$slug';
 
   // Master Location & Serviceability
   static const String serviceableLocations = '/api/master/serviceable-locations';
@@ -45,7 +46,7 @@ class ApiEndpoints {
   static const String areas = '/api/master/areas';
 
   // Customer Addresses
-  static const String customerAddress = '/api/customer/address';
+  static const String customerAddress = '/api/customer/address/';
   static String customerAddressDelete(int id) => '/api/customer/address/delete/$id';
   static String customerAddressSetPrimary(int id) => '/api/customer/address/$id/set-primary';
   static String customerAddressUpdate(int id) => '/api/customer/address/$id';
@@ -68,6 +69,9 @@ class ApiEndpoints {
   // Payment
   static const String createKvontechPayment = '/api/create-kvontech-payment';
   static const String verifyRazorpayPayment = '/api/verify-razorpay-payment';
+
+  // Transactions
+  static const String transactions = '/api/transactions';
 
   // Coupons
   static const String activeCoupons = '/api/coupons/active';

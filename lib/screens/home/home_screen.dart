@@ -13,14 +13,18 @@ import 'package:grahmitracus/providers/product/home_group_products_provider.dart
 import 'package:grahmitracus/providers/product/spotlight_banner_provider.dart';
 import 'package:grahmitracus/providers/product/trending_product_provider.dart';
 import 'package:grahmitracus/models/product/category_model.dart';
+import 'package:grahmitracus/models/product/vendor_model.dart';
+import 'package:grahmitracus/providers/product/vendor_provider.dart';
 import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/screens/location/location_picker_screen.dart';
 import 'package:grahmitracus/screens/product/product_detail_screen.dart';
-import 'package:grahmitracus/screens/search/search_screen.dart'; 
+import 'package:grahmitracus/screens/product/vendor_store_screen.dart';
+import 'package:grahmitracus/screens/search/search_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:grahmitracus/providers/cart/cart_provider.dart';
 import 'package:grahmitracus/screens/cart/cart_screen.dart';
 import 'package:grahmitracus/widgets/product_card.dart';
+import 'package:grahmitracus/widgets/delivery_location_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(int index)? onTabChange;
@@ -71,6 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         context.read<HomeGroupProductsProvider>().fetchCategoryGroupsProducts(
+          areaId: currentAreaId,
+          forceRefresh: true,
+        );
+
+        context.read<VendorProvider>().fetchVendors(
           areaId: currentAreaId,
           forceRefresh: true,
         );
@@ -321,6 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
           displayLocation: 'home',
           forceRefresh: true,
         );
+        context.read<VendorProvider>().fetchVendors();
       }
     });
     _scrollController.addListener(() {
@@ -433,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _updateCart(
     String id,
-    int delta,
+    int targetQty,
     String name, {
     double? sellPrice,
     double? mrpPrice,
@@ -446,11 +456,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     HapticFeedback.selectionClick();
     final cart = context.read<CartProvider>();
-    final current = cart.getQuantity(id);
-    final updated = current + delta;
+    final effectiveProductId = productId ?? id;
+    final current = cart.getProductQuantity(
+      effectiveProductId,
+      variationId: variationId,
+    );
+    final key = CartProvider.buildCartKey(
+      effectiveProductId,
+      variationId: variationId,
+    );
     cart.updateQuantity(
-      id,
-      updated,
+      key,
+      targetQty,
       title: name,
       sellPrice: sellPrice,
       mrpPrice: mrpPrice,
@@ -458,11 +475,11 @@ class _HomeScreenState extends State<HomeScreen> {
       weight: weight,
       category: category,
       storeName: storeName,
-      productId: productId,
+      productId: effectiveProductId,
       variationId: variationId,
     );
 
-    if (delta > 0 && updated == 1) {
+    if (current == 0 && targetQty > 0) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -646,6 +663,9 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // 1. Modern Header & Fast Delivery Badge
               _buildTopHeader(),
+
+              // Delivery Location Banner (shown when no delivery location has been set)
+              _buildDeliveryLocationBanner(),
               6.height,
 
               // 2. Modern Elevated Search Bar
@@ -659,6 +679,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // 5. Seamless Infinite Auto-Scroll Promo Offers Carousel
               _buildPromoBannerCarousel(),
               6.height,
+
+              // Shops Near You Vendor Section
+              _buildShopsNearYouSection(),
 
               // 6. Dynamic Subcategories Grid
               _buildGroceryCategorySection(),
@@ -829,11 +852,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 3.width,
                 Flexible(
                   child: Text(
-                    currentAddress,
+                    locationProv.hasSelectedLocation
+                        ? currentAddress
+                        : 'Select Location...',
                     style: AppTextStyles.plusJakartaSans(
                       fontSize: 12.5.sp,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: locationProv.hasSelectedLocation
+                          ? AppColors.textPrimary
+                          : AppColors.brandPurple,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -849,6 +876,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Delivery Location Banner matching user design
+  /// Shown when the user has no saved address and no explicitly chosen area
+  Widget _buildDeliveryLocationBanner() {
+    return DeliveryLocationBanner(
+      onLocationTap: _openLocationPicker,
     );
   }
 
@@ -1299,7 +1334,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           children: [
             SizedBox(
-              height: 128.h,
+              height: 168.h,
               child: PageView.builder(
                 controller: _bannerPageController,
                 onPageChanged: (index) {
@@ -1673,6 +1708,243 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Vendor Shops: "Shops near you" dynamically fetched from GET /api/vendors
+  Widget _buildShopsNearYouSection() {
+    return Consumer<VendorProvider>(
+      builder: (context, vendorProv, child) {
+        if (vendorProv.isLoading && vendorProv.vendors.isEmpty) {
+          return _buildShopsSkeleton();
+        }
+
+        final vendors = vendorProv.vendors;
+        if (vendors.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final double horizontalPadding = 16.w;
+            final double availableWidth =
+                constraints.maxWidth - (horizontalPadding * 2);
+            final double spacing = 10.w;
+            final double cardWidth = (availableWidth - (3 * spacing)) / 4;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                top: 4.h,
+                bottom: 14.h,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Shops near you',
+                    style: AppTextStyles.poppins(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E293B),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  12.height,
+                  Wrap(
+                    spacing: spacing,
+                    runSpacing: 14.h,
+                    children: vendors.map((vendor) {
+                      return _buildVendorShopCard(vendor, cardWidth);
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Individual vendor shop card
+  Widget _buildVendorShopCard(VendorModel vendor, double cardWidth) {
+    final logoUrl = vendor.fullLogoUrl;
+    final double boxSize = 56.w;
+
+    Widget logoWidget;
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      logoWidget = Image.network(
+        logoUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildVendorPlaceholder(vendor.storeName),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 14.w,
+              height: 14.w,
+              child: const CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: AppColors.brandPurple,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      logoWidget = _buildVendorPlaceholder(vendor.storeName);
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VendorStoreScreen(vendor: vendor),
+          ),
+        );
+      },
+      child: SizedBox(
+        width: cardWidth,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: boxSize,
+              height: boxSize,
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.0,
+                ),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 40.w,
+                  height: 40.w,
+                  child: logoWidget,
+                ),
+              ),
+            ),
+            5.height,
+            Text(
+              vendor.storeName,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.plusJakartaSans(
+                fontSize: 10.5.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E293B),
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Vendor placeholder if store logo fails to load or is null
+  Widget _buildVendorPlaceholder(String storeName) {
+    final initial = storeName.trim().isNotEmpty
+        ? storeName.trim().substring(0, 1).toUpperCase()
+        : 'S';
+    return Container(
+      width: 36.w,
+      height: 36.w,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: AppColors.subtleBackground,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: AppTextStyles.poppins(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w800,
+          color: AppColors.brandPurple,
+        ),
+      ),
+    );
+  }
+
+  /// Skeleton loader for Shops Near You while fetching
+  Widget _buildShopsSkeleton() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double horizontalPadding = 16.w;
+        final double availableWidth =
+            constraints.maxWidth - (horizontalPadding * 2);
+        final double spacing = 10.w;
+        final double cardWidth = (availableWidth - (3 * spacing)) / 4;
+        final double boxSize = 56.w;
+
+        return Padding(
+          padding: EdgeInsets.only(
+            left: horizontalPadding,
+            right: horizontalPadding,
+            top: 4.h,
+            bottom: 14.h,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 130.w,
+                height: 18.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
+              ),
+              12.height,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(4, (index) {
+                  return SizedBox(
+                    width: cardWidth,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: boxSize,
+                          height: boxSize,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(14.r),
+                            border: Border.all(
+                              color: const Color(0xFFE2E8F0),
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        6.height,
+                        Container(
+                          width: boxSize * 0.8,
+                          height: 10.h,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// 6. Grocery Category Grid: Dynamic Subcategories from API or default categories
   Widget _buildGroceryCategorySection() {
     return Consumer2<CategoryGroupProvider, CategoryProvider>(
@@ -1994,14 +2266,19 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Modern Quick-Commerce Trending Product Card (API connected, Next.js ProductCard design)
   Widget _buildApiTrendingProductCard(TrendingProductModel product, int index) {
     final id = product.id.toString();
-    final quantity = context.watch<CartProvider>().getQuantity(id);
+    final vId = product.variationId?.toString();
+    final quantity = context.watch<CartProvider>().getProductQuantity(
+          id,
+          variationId: vId,
+        );
     final homeProd = HomeProductModel(
       id: product.id,
       title: product.title,
       sellPrice: product.sellPrice,
       mrpPrice: product.mrpPrice,
       productImg: product.imgPath,
-      variationName: product.weight ?? '1 Pack',
+      variationName: product.variationName ?? product.weight ?? '1 Pack',
+      variationId: product.variationId,
       storeName: product.storeName,
       brand: product.categoryName,
       isTrending: 1,
@@ -2027,7 +2304,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         onQuantityChanged: (qty) => _updateCart(
           id,
-          qty - quantity,
+          qty,
           product.title,
           sellPrice: product.sellPrice,
           mrpPrice: product.mrpPrice,
@@ -2077,7 +2354,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         onQuantityChanged: (qty) => _updateCart(
           id,
-          qty - quantity,
+          qty,
           product['name'] as String? ?? '',
           sellPrice: (product['price'] as num?)?.toDouble() ?? 0.0,
           mrpPrice: (product['mrp'] as num?)?.toDouble() ?? 0.0,
@@ -2238,12 +2515,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Modern API Product Card matching Next.js Frontend Design
   Widget _buildApiHomeProductCard(HomeProductModel product) {
-    final id = product.id.toString();
-    final quantity = context.watch<CartProvider>().getQuantity(id);
-
     return ProductCard(
       product: product,
-      quantity: quantity,
       onTap: () {
         Navigator.push(
           context,
@@ -2256,14 +2529,15 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       onQuantityChanged: (qty) => _updateCart(
-        id,
-        qty - quantity,
+        product.id.toString(),
+        qty,
         product.title,
         sellPrice: product.sellPrice,
         mrpPrice: product.mrpPrice,
         imgPath: product.imgPath,
         weight: product.variationName,
         category: product.subcategory,
+        storeName: product.storeName,
         productId: product.id.toString(),
         variationId: product.variationId?.toString(),
       ),
@@ -2273,7 +2547,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 2-Column Grocery Product Card (Fallback converted to unified ProductCard)
   Widget _buildGroceryGridCard(Map<String, dynamic> item) {
     final id = item['id'] as String;
-    final quantity = context.watch<CartProvider>().getQuantity(id);
     final prod = HomeProductModel(
       id: int.tryParse(id.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1,
       title: item['name'] as String? ?? '',
@@ -2286,7 +2559,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return ProductCard(
       product: prod,
-      quantity: quantity,
       onTap: () {
         Navigator.push(
           context,
@@ -2299,8 +2571,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       onQuantityChanged: (qty) => _updateCart(
-        id,
-        qty - quantity,
+        prod.id.toString(),
+        qty,
         prod.title,
         sellPrice: prod.sellPrice,
         mrpPrice: prod.mrpPrice,

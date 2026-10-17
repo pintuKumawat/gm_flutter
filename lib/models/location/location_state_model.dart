@@ -25,15 +25,15 @@ class UserLocationState {
     this.address,
   });
 
-  /// Default fallback location matching Grahmitra core area (Sector 62, Noida)
+  /// Default unselected location when no location has been chosen
   factory UserLocationState.defaultLocation() {
     return const UserLocationState(
       type: 'default',
-      displayString: 'Sector 62, Noida',
+      displayString: '',
       areaId: 101,
-      areaName: 'Sector 62',
+      areaName: null,
       city: 'Noida',
-      pincode: '201309',
+      pincode: null,
     );
   }
 
@@ -61,4 +61,38 @@ class UserLocationState {
       address: addr,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'displayString': displayString,
+        'areaId': areaId,
+        'areaName': areaName,
+        'city': city,
+        'pincode': pincode,
+        'lat': lat,
+        'lng': lng,
+        'address': address?.toJson(),
+      };
+
+  factory UserLocationState.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String? ?? 'default';
+    var display = json['displayString'] as String? ?? '';
+    if (type == 'default' && display == 'Sector 62, Noida') {
+      display = '';
+    }
+    return UserLocationState(
+      type: type,
+      displayString: display,
+      areaId: json['areaId'] as int?,
+      areaName: json['areaName'] as String?,
+      city: json['city'] as String?,
+      pincode: json['pincode'] as String?,
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
+      address: json['address'] != null && json['address'] is Map
+          ? UserAddressModel.fromJson(Map<String, dynamic>.from(json['address'] as Map))
+          : null,
+    );
+  }
 }
+

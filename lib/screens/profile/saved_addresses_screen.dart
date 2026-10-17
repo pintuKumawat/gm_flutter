@@ -6,6 +6,7 @@ import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/models/location/user_address_model.dart';
 import 'package:grahmitracus/screens/location/add_address_modal.dart';
 import 'package:grahmitracus/core/responsive/size__extensions.dart';
+import 'package:grahmitracus/providers/profile/profile_provider.dart';
 
 class SavedAddressesScreen extends StatelessWidget {
   const SavedAddressesScreen({super.key});
@@ -149,24 +150,81 @@ class SavedAddressesScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      addr.displayTitle,
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          addr.displayTitle,
+                          style: AppTextStyles.plusJakartaSans(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (addr.isPrimary) ...[
+                          8.width,
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              'PRIMARY',
+                              style: AppTextStyles.plusJakartaSans(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF15803D),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_rounded, color: AppColors.iconSubtle, size: 20.sp),
-                      onSelected: (value) {
-                        if (value == 'edit') {
+                      onSelected: (value) async {
+                        if (value == 'primary') {
+                          try {
+                            await locationProv.setPrimaryAddress(addr.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Primary address updated successfully'),
+                                  backgroundColor: AppColors.textPrimary,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to set primary address. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          }
+                        } else if (value == 'edit') {
                           _openAddAddressModal(context, addr);
                         } else if (value == 'delete') {
                           locationProv.deleteAddress(addr.id);
                         }
                       },
                       itemBuilder: (context) => [
+                        if (!addr.isPrimary)
+                          const PopupMenuItem(
+                            value: 'primary',
+                            child: Text('Set as Primary'),
+                          ),
                         const PopupMenuItem(
                           value: 'edit',
                           child: Text('Edit'),
@@ -179,14 +237,35 @@ class SavedAddressesScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                4.height,
-                Text(
-                  addr.receiverName ?? 'Pintu Kumar',
-                  style: AppTextStyles.plusJakartaSans(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final profileUser = context.watch<ProfileProvider?>()?.user;
+                    final profileName = (profileUser != null && profileUser.fullName != 'User' && profileUser.fullName.trim().isNotEmpty)
+                        ? profileUser.fullName.trim()
+                        : null;
+                    final rawReceiver = addr.receiverName?.trim();
+                    final hasReceiver = rawReceiver != null && rawReceiver.isNotEmpty;
+
+                    final String? displayName = addr.isForOther
+                        ? (hasReceiver ? rawReceiver : 'Recipient')
+                        : (profileName ?? (hasReceiver ? rawReceiver : null));
+
+                    if (displayName == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Padding(
+                      padding: EdgeInsets.only(top: 4.h),
+                      child: Text(
+                        displayName,
+                        style: AppTextStyles.plusJakartaSans(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 4.height,
                 Text(

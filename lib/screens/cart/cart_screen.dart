@@ -14,6 +14,7 @@ import 'package:grahmitracus/providers/profile/profile_provider.dart';
 import 'package:grahmitracus/core/services/auth_guard.dart';
 import 'package:grahmitracus/screens/auth/login_page.dart';
 import 'package:grahmitracus/screens/location/location_picker_screen.dart';
+import 'package:grahmitracus/widgets/delivery_location_banner.dart';
 
 class CartScreen extends StatefulWidget {
   final void Function(int tabIndex)? onNavigateTab;
@@ -127,6 +128,34 @@ class _CartScreenState extends State<CartScreen> {
             },
           ),
         ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    // Require valid delivery location before proceeding to checkout
+    if (!locationProv.hasSelectedLocation || locationProv.currentLocation.displayString.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please set your delivery location to place your order.',
+            style: AppTextStyles.plusJakartaSans(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
       );
       return;
     }
@@ -746,98 +775,8 @@ class _CartScreenState extends State<CartScreen> {
 
   /// 1. Delivery ETA & Current Location Banner
   Widget _buildDeliveryBanner(BuildContext context) {
-    final locationProv = context.watch<LocationProvider>();
-    final address = locationProv.currentLocation.displayString;
-
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(8.r),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFEF08A), Color(0xFFFDE047)],
-              ),
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Icon(
-              Icons.bolt_rounded,
-              color: const Color(0xFF854D0E),
-              size: 20.sp,
-            ),
-          ),
-          12.width,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Fast Delivery',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                    6.width,
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 5.w,
-                        vertical: 1.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        'FAST',
-                        style: AppTextStyles.plusJakartaSans(
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF16A34A),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                3.height,
-                Text(
-                  address,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.plusJakartaSans(
-                    fontSize: 11.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          8.width,
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
-              );
-            },
-            child: Text(
-              'Change',
-              style: AppTextStyles.plusJakartaSans(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.brandPurple,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return const DeliveryLocationBanner(
+      showSelectedLocation: true,
     );
   }
 

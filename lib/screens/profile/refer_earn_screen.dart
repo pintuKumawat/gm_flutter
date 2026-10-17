@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/size__extensions.dart';
 import 'package:grahmitracus/providers/profile/wallet_provider.dart';
@@ -24,7 +25,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
         if (walletProvider.wallet == null) {
           walletProvider.fetchWallet();
         }
-        
+
         final referralProvider = context.read<ReferralProvider>();
         if (referralProvider.referralData == null) {
           referralProvider.fetchReferralHistory();
@@ -35,6 +36,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
 
   void _copyToClipboard(BuildContext context, String text, String message) {
     Clipboard.setData(ClipboardData(text: text)).then((_) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -56,11 +58,44 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
     });
   }
 
-  void _shareReferral(BuildContext context, String code) {
-    final String referralLink = 'grahmitra.com/refer/$code';
-    final String shareMessage =
-        'Join GrahMitra using my referral code $code and enjoy the available referral benefits. Link: $referralLink';
-    _copyToClipboard(context, shareMessage, 'Share message copied to clipboard');
+  Future<void> _shareReferral(BuildContext context, String? code) async {
+    final cleanCode = (code != null && code.trim().isNotEmpty && code != 'N/A')
+        ? code.trim()
+        : null;
+
+    final String referralLink = cleanCode != null
+        ? 'https://grahmitra.com/refer/$cleanCode'
+        : 'https://grahmitra.com';
+
+    final String shareMessage = cleanCode != null
+        ? 'Join GrahMitra using my referral code $cleanCode and enjoy the available referral benefits. Link: $referralLink'
+        : 'Join GrahMitra and enjoy grocery shopping with the best offers! Link: $referralLink';
+
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final Rect? sharePositionOrigin = box != null && box.hasSize
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareMessage,
+          subject: cleanCode != null
+              ? 'Join GrahMitra - Referral Code: $cleanCode'
+              : 'Join GrahMitra',
+          sharePositionOrigin: sharePositionOrigin,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Share error: $e');
+      if (context.mounted) {
+        _copyToClipboard(
+          context,
+          shareMessage,
+          'Share message copied to clipboard',
+        );
+      }
+    }
   }
 
   @override
@@ -77,7 +112,10 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -106,10 +144,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                         color: AppColors.brandPurple.withValues(alpha: 0.08),
                         shape: BoxShape.circle,
                       ),
-                      child: Text(
-                        '🎁',
-                        style: TextStyle(fontSize: 48.sp),
-                      ),
+                      child: Text('🎁', style: TextStyle(fontSize: 48.sp)),
                     ),
                     24.height,
                     Text(
@@ -134,7 +169,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 ),
               ),
               32.height,
-              
+
               // Code Section
               Text(
                 'Your Referral Code',
@@ -173,24 +208,31 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                             ),
                           ),
                     IconButton(
-                      icon: Icon(Icons.copy_rounded, color: AppColors.textPrimary, size: 20.sp),
+                      icon: Icon(
+                        Icons.copy_rounded,
+                        color: AppColors.textPrimary,
+                        size: 20.sp,
+                      ),
                       onPressed: () {
                         if (referralCode == 'N/A' || isLoading) return;
                         HapticFeedback.selectionClick();
-                        _copyToClipboard(context, referralCode, 'Referral code copied');
+                        _copyToClipboard(
+                          context,
+                          referralCode,
+                          'Referral code copied',
+                        );
                       },
                     ),
                   ],
                 ),
               ),
               24.height,
-              
+
               // Share Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (referralCode == 'N/A' || isLoading) return;
                     HapticFeedback.selectionClick();
                     _shareReferral(context, referralCode);
                   },
@@ -212,7 +254,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                   ),
                 ),
               ),
-              
+
               40.height,
               // How it Works
               Text(
@@ -239,7 +281,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 'Earn rewards',
                 'You receive the applicable referral reward.',
               ),
-              
+
               40.height,
               // History Section
               Row(
@@ -315,7 +357,9 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                         children: [
                           CircleAvatar(
                             radius: 20.r,
-                            backgroundColor: AppColors.brandPurple.withValues(alpha: 0.1),
+                            backgroundColor: AppColors.brandPurple.withValues(
+                              alpha: 0.1,
+                            ),
                             child: Text(
                               friend.initials,
                               style: AppTextStyles.plusJakartaSans(

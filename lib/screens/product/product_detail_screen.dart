@@ -39,24 +39,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
-  void _triggerAddFeedback({bool navigateToCart = false}) {
-    HapticFeedback.mediumImpact();
+  String _resolveCartItemId(
+    ProductDetailProvider provider,
+    ProductDetailModel? product,
+  ) {
+    final homeProd = widget.initialProduct;
+    final productId = product?.id.toString() ??
+        homeProd?.id.toString() ??
+        widget.productIdOrSlug;
+    final variationId = provider.selectedVariation?.id.toString() ??
+        product?.variationId?.toString() ??
+        homeProd?.variationId?.toString();
+    return CartProvider.buildCartKey(productId, variationId: variationId);
+  }
+
+  void _handleIncrement() {
+    HapticFeedback.lightImpact();
     final provider = context.read<ProductDetailProvider>();
+    final cart = context.read<CartProvider>();
     final product = provider.product;
     final homeProd = widget.initialProduct;
+    final productId = product?.id.toString() ??
+        homeProd?.id.toString() ??
+        widget.productIdOrSlug;
+    final variationId = provider.selectedVariation?.id.toString() ??
+        product?.variationId?.toString() ??
+        homeProd?.variationId?.toString();
+    final id = CartProvider.buildCartKey(productId, variationId: variationId);
 
     final title = product?.title ?? homeProd?.title ?? 'Product';
-    final sellPrice = product?.sellPrice ?? homeProd?.sellPrice ?? 0.0;
-    final mrpPrice = product?.mrpPrice ?? homeProd?.mrpPrice ?? sellPrice;
+    final sellPrice = provider.effectivePrice > 0
+        ? provider.effectivePrice
+        : (product?.sellPrice ?? homeProd?.sellPrice ?? 0.0);
+    final mrpPrice = provider.effectiveMrp > 0
+        ? provider.effectiveMrp
+        : (product?.mrpPrice ?? homeProd?.mrpPrice ?? sellPrice);
     final imgPath = product?.allImages.firstOrNull ?? homeProd?.imgPath;
-    final weight = product?.variationName ?? homeProd?.variationName;
+    final weight = provider.selectedVariation?.name ??
+        product?.variationName ??
+        homeProd?.variationName;
     final category = product?.category ?? homeProd?.brand;
-    final productId = product?.id.toString() ?? homeProd?.id.toString() ?? widget.productIdOrSlug;
-    final variationId = provider.selectedVariation?.id.toString() ?? product?.variationId?.toString() ?? homeProd?.variationId?.toString();
-    final id = "${productId}_${variationId ?? 'default'}";
 
-    context.read<CartProvider>().addToCart(
-      id: id,
+    final currentQty = cart.getProductQuantity(productId, variationId: variationId);
+    cart.updateQuantity(
+      id,
+      currentQty + 1,
       title: title,
       sellPrice: sellPrice,
       mrpPrice: mrpPrice,
@@ -65,8 +92,79 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       category: category,
       productId: productId,
       variationId: variationId,
-      quantity: provider.quantity,
     );
+  }
+
+  void _handleDecrement() {
+    HapticFeedback.lightImpact();
+    final provider = context.read<ProductDetailProvider>();
+    final cart = context.read<CartProvider>();
+    final product = provider.product;
+    final homeProd = widget.initialProduct;
+    final productId = product?.id.toString() ??
+        homeProd?.id.toString() ??
+        widget.productIdOrSlug;
+    final variationId = provider.selectedVariation?.id.toString() ??
+        product?.variationId?.toString() ??
+        homeProd?.variationId?.toString();
+    final id = CartProvider.buildCartKey(productId, variationId: variationId);
+
+    final currentQty = cart.getProductQuantity(productId, variationId: variationId);
+    if (currentQty <= 1) {
+      cart.removeItem(id);
+    } else {
+      cart.updateQuantity(
+        id,
+        currentQty - 1,
+        productId: productId,
+        variationId: variationId,
+      );
+    }
+  }
+
+  void _triggerAddFeedback({bool navigateToCart = false}) {
+    HapticFeedback.mediumImpact();
+    final provider = context.read<ProductDetailProvider>();
+    final product = provider.product;
+    final homeProd = widget.initialProduct;
+
+    final title = product?.title ?? homeProd?.title ?? 'Product';
+    final sellPrice = provider.effectivePrice > 0
+        ? provider.effectivePrice
+        : (product?.sellPrice ?? homeProd?.sellPrice ?? 0.0);
+    final mrpPrice = provider.effectiveMrp > 0
+        ? provider.effectiveMrp
+        : (product?.mrpPrice ?? homeProd?.mrpPrice ?? sellPrice);
+    final imgPath = product?.allImages.firstOrNull ?? homeProd?.imgPath;
+    final weight = provider.selectedVariation?.name ??
+        product?.variationName ??
+        homeProd?.variationName;
+    final category = product?.category ?? homeProd?.brand;
+    final productId = product?.id.toString() ??
+        homeProd?.id.toString() ??
+        widget.productIdOrSlug;
+    final variationId = provider.selectedVariation?.id.toString() ??
+        product?.variationId?.toString() ??
+        homeProd?.variationId?.toString();
+    final id = CartProvider.buildCartKey(productId, variationId: variationId);
+
+    final cart = context.read<CartProvider>();
+    final currentQty = cart.getProductQuantity(productId, variationId: variationId);
+
+    if (currentQty <= 0) {
+      cart.addToCart(
+        id: id,
+        title: title,
+        sellPrice: sellPrice,
+        mrpPrice: mrpPrice,
+        imageUrl: imgPath,
+        weight: weight,
+        category: category,
+        productId: productId,
+        variationId: variationId,
+        quantity: 1,
+      );
+    }
 
     if (navigateToCart) {
       Navigator.push(
@@ -805,38 +903,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Row(
           children: [
-            // Quantity Stepper
-            Container(
-              height: 46.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.1),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: inStock ? provider.decrementQuantity : null,
-                    icon: const Icon(Icons.remove_rounded, size: 16),
-                    color: const Color(0xFF334155),
-                    splashRadius: 18,
+            // Quantity Stepper (synchronized with CartProvider)
+            Consumer<CartProvider>(
+              builder: (context, cart, _) {
+                final cartItemId = _resolveCartItemId(provider, product);
+                final cartQty = cart.getQuantity(cartItemId);
+                final bool isInCart = cartQty > 0;
+
+                return Container(
+                  height: 46.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.1),
                   ),
-                  Text(
-                    '${provider.quantity}',
-                    style: AppTextStyles.plusJakartaSans(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF0F172A),
-                    ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: inStock && isInCart ? _handleDecrement : null,
+                        icon: const Icon(Icons.remove_rounded, size: 16),
+                        color: const Color(0xFF334155),
+                        splashRadius: 18,
+                      ),
+                      Text(
+                        isInCart ? '$cartQty' : '1',
+                        style: AppTextStyles.plusJakartaSans(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: inStock
+                            ? () {
+                                if (isInCart) {
+                                  _handleIncrement();
+                                } else {
+                                  _triggerAddFeedback();
+                                }
+                              }
+                            : null,
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        color: const Color(0xFF334155),
+                        splashRadius: 18,
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: inStock ? provider.incrementQuantity : null,
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    color: const Color(0xFF334155),
-                    splashRadius: 18,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
 
             10.width,
@@ -1151,8 +1265,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   final relProduct = related[index];
                   return Consumer<CartProvider>(
                     builder: (context, cart, _) {
-                      final id = relProduct.id.toString();
-                      final quantity = cart.getQuantity(id);
+                      final key = CartProvider.buildCartKey(
+                        relProduct.id.toString(),
+                        variationId: relProduct.variationId?.toString(),
+                      );
+                      final quantity = cart.getProductQuantity(
+                        relProduct.id.toString(),
+                        variationId: relProduct.variationId?.toString(),
+                      );
 
                       return SizedBox(
                         width: 146.w,
@@ -1165,7 +1285,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ProductDetailScreen(
-                                  productIdOrSlug: relProduct.slag ?? id,
+                                  productIdOrSlug: relProduct.slag ?? relProduct.id.toString(),
                                   initialProduct: relProduct,
                                 ),
                               ),
@@ -1173,7 +1293,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           },
                           onQuantityChanged: (qty) {
                             cart.updateQuantity(
-                              id,
+                              key,
                               qty,
                               title: relProduct.title,
                               sellPrice: relProduct.sellPrice,
@@ -1181,6 +1301,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               imageUrl: relProduct.imgPath,
                               weight: relProduct.variationName,
                               category: relProduct.subcategory,
+                              productId: relProduct.id.toString(),
+                              variationId: relProduct.variationId?.toString(),
                             );
                           },
                         ),
@@ -1259,29 +1381,104 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             16.width,
             Expanded(
-              child: SizedBox(
-                height: 44.h,
-                child: ElevatedButton(
-                  onPressed: inStock ? _triggerAddFeedback : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isAddedFeedback
-                        ? const Color(0xFF168A35)
-                        : const Color(0xFF6B21A8),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r),
+              child: Consumer<CartProvider>(
+                builder: (context, cart, _) {
+                  final productId = product.id.toString();
+                  final variationId = provider.selectedVariation?.id.toString() ??
+                      product.variationId?.toString();
+                  final cartQty = cart.getProductQuantity(productId, variationId: variationId);
+                  final bool isInCart = cartQty > 0;
+
+                  if (isInCart) {
+                    return Container(
+                      height: 44.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF168A35),
+                        borderRadius: BorderRadius.circular(10.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF168A35).withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            onPressed: _handleDecrement,
+                            icon: Icon(
+                              cartQty == 1
+                                  ? Icons.delete_outline_rounded
+                                  : Icons.remove_rounded,
+                              size: 18.sp,
+                              color: Colors.white,
+                            ),
+                            splashRadius: 18,
+                          ),
+                          Container(
+                            constraints: BoxConstraints(minWidth: 28.w),
+                            child: Text(
+                              '$cartQty in cart',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.plusJakartaSans(
+                                fontSize: 13.5.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: inStock ? _handleIncrement : null,
+                            icon: Icon(
+                              Icons.add_rounded,
+                              size: 18.sp,
+                              color: Colors.white,
+                            ),
+                            splashRadius: 18,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    height: 44.h,
+                    child: ElevatedButton(
+                      onPressed: inStock ? _triggerAddFeedback : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isAddedFeedback
+                            ? const Color(0xFF168A35)
+                            : const Color(0xFF6B21A8),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 18.sp,
+                            color: Colors.white,
+                          ),
+                          8.width,
+                          Text(
+                            _isAddedFeedback ? 'ADDED TO CART' : 'ADD TO CART',
+                            style: AppTextStyles.plusJakartaSans(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    _isAddedFeedback ? 'ADDED TO CART' : 'ADD TO CART',
-                    style: AppTextStyles.plusJakartaSans(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],

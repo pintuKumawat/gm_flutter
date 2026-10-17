@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:grahmitracus/core/constants/constants.dart';
 import 'package:grahmitracus/core/responsive/responsive.dart';
 import 'package:grahmitracus/models/product/home_product_model.dart';
+import 'package:grahmitracus/providers/cart/cart_provider.dart';
 import 'package:grahmitracus/widgets/product_variation_bottom_sheet.dart';
 
 /// Clean, modern Product Card matching Next.js Frontend Product.js
@@ -50,6 +52,11 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    final effectiveQuantity = cart.getProductQuantity(
+      product.id.toString(),
+      variationId: product.variationId?.toString(),
+    );
     final discountPercent = product.discountPercent;
     final isSoldOut = product.isSoldOut;
     final sellPrice = product.sellPrice;
@@ -423,7 +430,7 @@ class ProductCard extends StatelessWidget {
                           4.width,
 
                           // Action Button: Sold Out / Add with Cart Icon / Quantity Stepper
-                          _buildActionButton(context, isSoldOut),
+                          _buildActionButton(context, isSoldOut, effectiveQuantity, cart),
                         ],
                       ),
                     ],
@@ -438,7 +445,12 @@ class ProductCard extends StatelessWidget {
   }
 
   /// Action Button: Sold Out / Purple ADD | [Cart] / Green Quantity Stepper
-  Widget _buildActionButton(BuildContext context, bool isSoldOut) {
+  Widget _buildActionButton(
+    BuildContext context,
+    bool isSoldOut,
+    int effectiveQuantity,
+    CartProvider cart,
+  ) {
     if (isSoldOut) {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
@@ -457,9 +469,10 @@ class ProductCard extends StatelessWidget {
       );
     }
 
-    if (quantity <= 0) {
+    if (effectiveQuantity <= 0) {
       // Purple "ADD | [Cart]" Button
       return GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.selectionClick();
           ProductVariationBottomSheet.handleAddTapped(context, product.id.toString());
@@ -507,65 +520,91 @@ class ProductCard extends StatelessWidget {
     }
 
     // Green Qty Stepper (#168a35)
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 3.5.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFF168A35),
-        borderRadius: BorderRadius.circular(8.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF168A35).withValues(alpha: 0.25),
-            blurRadius: 4,
-            offset: const Offset(0, 1.5),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onQuantityChanged?.call(quantity - 1);
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: Icon(
-                Icons.remove_rounded,
-                color: Colors.white,
-                size: 11.5.sp,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {}, // absorbs tap so tapping the pill does not trigger card onTap
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF168A35),
+          borderRadius: BorderRadius.circular(8.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF168A35).withValues(alpha: 0.25),
+              blurRadius: 4,
+              offset: const Offset(0, 1.5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _changeQuantity(context, cart, effectiveQuantity - 1),
+              child: Padding(
+                padding: EdgeInsets.only(left: 7.w, right: 5.w, top: 4.h, bottom: 4.h),
+                child: Icon(
+                  Icons.remove_rounded,
+                  color: Colors.white,
+                  size: 13.sp,
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 2.w),
-            child: Text(
-              '$quantity',
-              style: AppTextStyles.plusJakartaSans(
-                fontSize: 9.5.sp,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 1.w),
+              child: Text(
+                '$effectiveQuantity',
+                style: AppTextStyles.plusJakartaSans(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onQuantityChanged?.call(quantity + 1);
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              child: Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 11.5.sp,
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _changeQuantity(context, cart, effectiveQuantity + 1),
+              child: Padding(
+                padding: EdgeInsets.only(left: 5.w, right: 7.w, top: 4.h, bottom: 4.h),
+                child: Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 13.sp,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _changeQuantity(BuildContext context, CartProvider cart, int newQty) {
+    HapticFeedback.lightImpact();
+    final targetQty = newQty < 0 ? 0 : newQty;
+    final key = CartProvider.buildCartKey(
+      product.id.toString(),
+      variationId: product.variationId?.toString(),
+    );
+
+    cart.updateQuantity(
+      key,
+      targetQty,
+      title: product.title,
+      sellPrice: product.sellPrice,
+      mrpPrice: product.mrpPrice,
+      imageUrl: product.imgPath,
+      weight: product.variationName,
+      category: product.subcategory,
+      storeName: product.storeName,
+      productId: product.id.toString(),
+      variationId: product.variationId?.toString(),
+    );
+
+    if (onQuantityChanged != null) {
+      onQuantityChanged!(targetQty);
+    }
   }
 
   Widget _buildImageFallback() {
