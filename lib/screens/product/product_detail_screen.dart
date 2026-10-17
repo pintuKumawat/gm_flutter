@@ -29,6 +29,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isAddedFeedback = false;
+  bool _isDescriptionExpanded = false;
 
   @override
   void initState() {
@@ -51,7 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final weight = product?.variationName ?? homeProd?.variationName;
     final category = product?.category ?? homeProd?.brand;
     final productId = product?.id.toString() ?? homeProd?.id.toString() ?? widget.productIdOrSlug;
-    final variationId = provider.selectedVariation?.id?.toString() ?? product?.variationId?.toString() ?? homeProd?.variationId?.toString();
+    final variationId = provider.selectedVariation?.id.toString() ?? product?.variationId?.toString() ?? homeProd?.variationId?.toString();
     final id = "${productId}_${variationId ?? 'default'}";
 
     context.read<CartProvider>().addToCart(
@@ -962,9 +963,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   /// 9. About the Product / Specifications Card
   Widget _buildAboutProductSection(ProductDetailModel product) {
-    final desc = (product.description ?? product.shortDesc ?? '')
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .trim();
+    final desc = product.cleanDescription;
+    final hasCustomDesc = desc.isNotEmpty;
+    final displayDesc = hasCustomDesc
+        ? desc
+        : 'Fresh and verified quality grocery item delivered to your doorstep in minutes with 100% guarantee.';
+    final isLongDesc = displayDesc.length > 180 || displayDesc.contains('\n');
 
     return Container(
       width: double.infinity,
@@ -994,16 +998,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           8.height,
           Text(
-            desc.isNotEmpty
-                ? desc
-                : 'Fresh and verified quality grocery item delivered to your doorstep in minutes with 100% guarantee.',
+            displayDesc,
+            maxLines: _isDescriptionExpanded ? null : 4,
+            overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
             style: AppTextStyles.plusJakartaSans(
               fontSize: 11.5.sp,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF475569),
-              height: 1.45,
+              height: 1.5,
             ),
           ),
+          if (isLongDesc) ...[
+            6.height,
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _isDescriptionExpanded = !_isDescriptionExpanded);
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isDescriptionExpanded ? 'Read Less' : 'Read More',
+                    style: AppTextStyles.plusJakartaSans(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.brandPurple,
+                    ),
+                  ),
+                  4.width,
+                  Icon(
+                    _isDescriptionExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 16.sp,
+                    color: AppColors.brandPurple,
+                  ),
+                ],
+              ),
+            ),
+          ],
           12.height,
           const Divider(color: Color(0xFFF1F5F9), height: 1),
           10.height,
@@ -1013,6 +1047,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _buildSpecRow('Category', product.category!),
           if (product.subcategory != null && product.subcategory!.isNotEmpty)
             _buildSpecRow('Type', product.subcategory!),
+          if (product.variationName != null && product.variationName!.isNotEmpty)
+            _buildSpecRow('Pack / Size', product.variationName!),
+          if (product.storeName != null && product.storeName!.isNotEmpty)
+            _buildSpecRow('Seller', product.storeName!),
           _buildSpecRow('Country of Origin', 'India'),
         ],
       ),

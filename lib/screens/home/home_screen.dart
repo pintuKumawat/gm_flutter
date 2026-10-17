@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async'; 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +16,7 @@ import 'package:grahmitracus/models/product/category_model.dart';
 import 'package:grahmitracus/providers/location/location_provider.dart';
 import 'package:grahmitracus/screens/location/location_picker_screen.dart';
 import 'package:grahmitracus/screens/product/product_detail_screen.dart';
-import 'package:grahmitracus/screens/search/search_screen.dart';
+import 'package:grahmitracus/screens/search/search_screen.dart'; 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:grahmitracus/providers/cart/cart_provider.dart';
 import 'package:grahmitracus/screens/cart/cart_screen.dart';
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Listen to active area changes to dynamically refetch products
     final locationProv = context.watch<LocationProvider>();
-    final currentAreaId = locationProv.activeAreaId;
+    final currentAreaId = locationProv.activeAreaId;  
 
     if (_lastAreaId != currentAreaId) {
       _lastAreaId = currentAreaId;
@@ -899,22 +899,22 @@ class _HomeScreenState extends State<HomeScreen> {
               8.width,
               Expanded(
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min, 
                   children: [
-                    Text(
-                      'Search ',
-                      style: AppTextStyles.plusJakartaSans(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textHint,
-                      ),
-                    ),
+                    // Text(
+                    //   'Search ',
+                    //   style: AppTextStyles.plusJakartaSans(
+                    //     fontSize: 13.sp,
+                    //     fontWeight: FontWeight.w500,
+                    //     color: AppColors.textHint,
+                    //   ),
+                    // ),
                     Flexible(
                       child: RichText(
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         text: TextSpan(
-                          children: [
+                          children: [ 
                             TextSpan(
                               text: '"$_currentTypedText',
                               style: AppTextStyles.plusJakartaSans(
@@ -932,7 +932,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 1.8.w,
                                   height: 14.h,
                                   margin: EdgeInsets.symmetric(horizontal: 1.w),
-                                  decoration: BoxDecoration(
+                                  decoration: BoxDecoration( 
                                     color: AppColors.brandPurple,
                                     borderRadius: BorderRadius.circular(1.r),
                                   ),
@@ -955,7 +955,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => _openSearchScreen(startVoice: true),
+                onTap: () => _openSearchScreen(startVoice: true), 
                 child: Container(
                   padding: EdgeInsets.all(6.r),
                   decoration: BoxDecoration(
@@ -1089,9 +1089,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       Container(
-                        width: 52.w,
+                        width: 52.w, 
                         height: 52.w,
-                        decoration: const BoxDecoration(
+                        decoration: const BoxDecoration(   
                           color: AppColors.subtleBackground,
                           shape: BoxShape.circle,
                         ),

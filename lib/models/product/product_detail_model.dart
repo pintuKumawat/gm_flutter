@@ -1,4 +1,5 @@
 import 'package:grahmitracus/core/config/env_config.dart';
+import 'package:grahmitracus/core/utils/html_utils.dart';
 
 /// Full Product Detail Model matching backend response from `/api/products/:id`
 class ProductDetailModel {
@@ -116,6 +117,15 @@ class ProductDetailModel {
   /// Sold out flag
   bool get isSoldOut => stockQuantity <= 0;
 
+  /// Returns cleaned plain text description, falling back to shortDesc if description is empty
+  String get cleanDescription {
+    final primary = HtmlUtils.cleanHtmlToPlainText(description);
+    if (primary.isNotEmpty) return primary;
+    final secondary = HtmlUtils.cleanHtmlToPlainText(shortDesc);
+    if (secondary.isNotEmpty) return secondary;
+    return '';
+  }
+
   factory ProductDetailModel.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic val) {
       if (val == null) return 0.0;
@@ -180,9 +190,18 @@ class ProductDetailModel {
     return ProductDetailModel(
       id: parseInt(json['id']),
       title: json['title'] as String? ?? json['name'] as String? ?? '',
-      brand: json['brand'] as String?,
-      description: json['description'] as String?,
-      shortDesc: json['short_desc'] as String? ?? json['shortDesc'] as String?,
+      brand: json['brand']?.toString(),
+      description: (json['description'] ??
+              json['desc'] ??
+              json['product_description'] ??
+              json['details'] ??
+              json['detail'] ??
+              json['about'])
+          ?.toString(),
+      shortDesc: (json['short_desc'] ??
+              json['shortDesc'] ??
+              json['short_description'])
+          ?.toString(),
       category: json['category'] as String?,
       subcategory: (json['subcategory'] ?? json['sub_category']) as String?,
       categoryId: json['category_id'] is int

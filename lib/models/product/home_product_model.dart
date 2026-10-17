@@ -1,4 +1,5 @@
 import 'package:grahmitracus/core/config/env_config.dart';
+import 'package:grahmitracus/core/utils/html_utils.dart';
 
 /// Product Model for Home Screen Rails, Category Groups, and Super Saver Deals
 class HomeProductModel {
@@ -104,7 +105,11 @@ class HomeProductModel {
           ? rawId
           : int.tryParse(rawId?.toString() ?? '0') ?? 0,
       title: json['title'] as String? ?? json['name'] as String? ?? '',
-      shortDesc: json['short_desc'] as String? ?? json['shortDesc'] as String? ?? json['description'] as String?,
+      shortDesc: () {
+        final raw = (json['short_desc'] ?? json['shortDesc'] ?? json['short_description'] ?? json['description'])?.toString();
+        final cleaned = HtmlUtils.cleanHtmlToPlainText(raw);
+        return cleaned.isNotEmpty ? cleaned : null;
+      }(),
       brand: json['brand'] as String?,
       subcategory: (json['subcategory'] ?? json['sub_category'] ?? json['subcategory_name']) as String?,
       categoryId: json['category_id'] is int

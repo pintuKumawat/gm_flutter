@@ -49,8 +49,9 @@ void main() async {
     ApiService.instance.setAuthToken(token);
   }
 
-  runApp(
+  runApp(  
     MultiProvider(
+      
       providers: [
         ChangeNotifierProvider(create: (_) => SendOtpProvider()),
         ChangeNotifierProvider(create: (_) => VerifyOtpProvider()),
